@@ -1,0 +1,72 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "strategy"
+authors = [
+    {name = "Tom McLean"},
+]
+description = "A trading strategy framework"
+classifiers = [
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+]
+dynamic = ["readme", "dependencies"]
+requires-python = ">=3.9"
+version = "0.0.1dev0"
+
+[tool.setuptools.dynamic]
+readme = {file = ["README.md"], content-type = "text/markdown"}
+dependencies = {file = ["requirements.txt"]}
+
+[tool.setuptools]
+packages = ["strategy"]
+
+[tool.black]
+line-length = 120
+include = '\.pyi?$'
+exclude = '''
+/(
+    \.eggs
+    | \.git
+    | \.hg
+    | \.mypy_cache
+    | \.nox
+    | \.tox
+    | \.venv
+    | _build
+    | buck-out
+    | build
+    | dist
+    | configs
+    | examples
+)/
+'''
+
+[tool.ruff]
+line-length = 120
+ignore = ["F405", "B008", "B023"]
+select = ["E", "F", "B", "C4", "DTZ", "PTH", "I001"]
+exclude = []
+
+[tool.ruff.per-file-ignores]
+"**/__init__.py" = ["F401", "F403"]
+
+[tool.ruff.isort]
+split-on-trailing-comma = true
+known-third-party = []
+known-first-party = ["strategy"]
+no-lines-before = ["local-folder"]
+section-order = [
+    "future",
+    "standard-library",
+    "third-party",
+    "first-party",
+    "this",
+    "local-folder"
+]
+
+[tool.ruff.isort.sections]
+"this" = ["strategy"]

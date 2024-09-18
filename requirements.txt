@@ -1,0 +1,8 @@
+fastapi
+click
+sqlalchemy
+arrow
+requests
+pydash
+alembic
+psycopg2

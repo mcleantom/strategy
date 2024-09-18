@@ -1,0 +1,13 @@
+repos:
+  - repo: https://github.com/charliermarsh/ruff-pre-commit
+    rev: "v0.0.291"
+    hooks:
+      - id: ruff
+        args: [--fix, --exit-non-zero-on-fix]
+        exclude: ^(.*/)?(\.venv|_build|build|dist|node_modules|configs|examples|\.next|\.git|\.mypy_cache|\.pytest_cache|\.tox|\.eggs|\.cache|\.hypothesis|\.mypy|\.nox|\.pre-commit|\.vscode|\.github|\.idea|__pycache__)/
+  - repo: https://github.com/psf/black
+    rev: 23.9.1 # Replace by any tag/version: https://github.com/psf/black/tags
+    hooks:
+      - id: black
+        language_version: python3.11
+        exclude: ^(.*/)?(\.venv|_build|build|dist|node_modules|configs|examples|\.next|\.git|\.mypy_cache|\.pytest_cache|\.tox|\.eggs|\.cache|\.hypothesis|\.mypy|\.nox|\.pre-commit|\.vscode|\.github|\.idea|__pycache__)/
