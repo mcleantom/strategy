@@ -1,0 +1,2 @@
+# strategy
+Trading strategy framework
