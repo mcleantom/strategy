@@ -21,5 +21,17 @@ services:
     container_name: redis
     command: redis-server --save "" --appendonly no
 
+  pgadmin:
+    image: dpage/pgadmin4
+    restart: always
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@example.com       # Set the pgAdmin default admin email
+      PGADMIN_DEFAULT_PASSWORD: admin_password       # Set the pgAdmin default admin password
+    ports:
+      - "8080:80"  # Expose pgAdmin on port 8080
+    depends_on:
+      - postgres    # Ensure PostgreSQL starts before pgAdmin
+    container_name: pgadmin
+
 volumes:
   postgres-data:

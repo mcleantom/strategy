@@ -17,7 +17,11 @@ class AlpacaExchange(CandleExchange):
 
     def get_starting_time(self, symbol: str) -> int:
         url = f"{self.base_url}/stocks/{symbol}/bars"
-        params = {"timeframe": "1Day", "limit": 1}
+        params = {
+            "timeframe": "1Day",
+            "limit": 1,
+            "start": "1970-01-01T00:00:00Z",
+        }
         response = requests.get(url, headers=self._get_headers(), params=params)
         self.validate_response(response)
         data = response.json()

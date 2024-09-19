@@ -1,4 +1,4 @@
-from sqlalchemy import UUID, BigInteger, Column, Float, String
+from sqlalchemy import UUID, BigInteger, Column, Float, String, UniqueConstraint
 
 from strategy.db import Base
 
@@ -16,3 +16,7 @@ class Candle(Base):
     exchange = Column(String(), index=True)
     symbol = Column(String(), index=True)
     timeframe = Column(String(), index=True)
+
+    __table_args__ = (
+        UniqueConstraint("exchange", "symbol", "timeframe", "timestamp", name="unique_candle_constraint"),
+    )
