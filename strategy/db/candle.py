@@ -1,6 +1,6 @@
 from sqlalchemy import UUID, BigInteger, Column, Float, String, UniqueConstraint
 
-from strategy.db import Base
+from strategy.db.base import Base
 
 
 class Candle(Base):

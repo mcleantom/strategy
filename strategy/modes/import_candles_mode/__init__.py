@@ -7,7 +7,7 @@ from sqlalchemy import asc, or_
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.future import select
 
-from strategy.db import SessionLocal
+from strategy.db.base import SessionLocal
 from strategy.db.candle import Candle
 from strategy.helpers import (
     arrow_to_timestamp,

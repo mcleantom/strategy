@@ -33,5 +33,11 @@ services:
       - postgres    # Ensure PostgreSQL starts before pgAdmin
     container_name: pgadmin
 
+  grafana:
+    image: grafana/grafana
+    restart: always
+    ports:
+      - "3000:3000"
+
 volumes:
   postgres-data:
