@@ -10,7 +10,7 @@ from strategy.modes.import_candles_mode.drivers.base_candles_exchange import Can
 
 class AlpacaExchange(CandleExchange):
     def __init__(self):
-        super().__init__(name="alpaca", count=1000, rate_limit_per_second=2)
+        super().__init__(name="alpaca", count=10_000, rate_limit_per_second=2)
         self.base_url = "https://data.alpaca.markets/v2"
         self.api_key = os.environ["APCA_API_KEY_ID"]
         self.api_secret = os.environ["APCA_API_SECRET_KEY"]
@@ -18,7 +18,7 @@ class AlpacaExchange(CandleExchange):
     def get_starting_time(self, symbol: str) -> int:
         url = f"{self.base_url}/stocks/{symbol}/bars"
         params = {
-            "timeframe": "1Day",
+            "timeframe": "1Min",
             "limit": 1,
             "start": "1970-01-01T00:00:00Z",
         }

@@ -6,3 +6,4 @@ requests
 pydash
 alembic
 psycopg2
+loguru

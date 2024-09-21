@@ -3,6 +3,7 @@ from typing import Any, Dict, List, Union
 
 import arrow
 import pydash
+from loguru import logger
 from sqlalchemy import asc, or_
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.future import select
@@ -183,6 +184,11 @@ def _fill_absent_candles(
 
 
 def store_candles_list(candles: list[dict]) -> None:
+    logger.info(
+        f"Saving candles from {timestamp_to_time(candles[0]['timestamp'])} "
+        + f"to {timestamp_to_time(candles[-1]['timestamp'])}"
+    )
+
     for c in candles:
         if "timeframe" not in c:
             raise ValueError("Candle has no timeframe")
@@ -195,4 +201,4 @@ def store_candles_list(candles: list[dict]) -> None:
 
 
 if __name__ == "__main__":
-    run(client_id="some_client_id", exchange="alpaca", symbol="AAPL", start_date_str="2023-01-01")
+    run(client_id="some_client_id", exchange="alpaca", symbol="AAPL", start_date_str="2024-08-01")
