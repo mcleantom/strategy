@@ -7,3 +7,6 @@ pydash
 alembic
 psycopg2
 loguru
+quantstats
+tqdm
+pandas
