@@ -10,3 +10,5 @@ loguru
 quantstats
 tqdm
 pandas
+ta_lib_easy
+numpy

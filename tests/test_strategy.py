@@ -16,7 +16,7 @@ class ExampleStrategy(Strategy):
 
     def go_long(self) -> Order:
         self.has_bought = True
-        return Order(quantity=1, price=self.candles[-1].close, stop_loss=None, take_profit=None)
+        return Order(quantity=1, price=self.store.candles.most_recent_candle.close, stop_loss=None, take_profit=None)
 
     def should_short(self) -> bool:
         return False

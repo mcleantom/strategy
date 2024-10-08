@@ -26,7 +26,6 @@ class Backtester:
         self.entry_price = 0
         self.pnl = 0
         self.trades: list[Trade] = []
-        self.current_candle = None
         self.stop_loss = None
         self.take_profit = None
         self.daily_returns = []
@@ -37,8 +36,7 @@ class Backtester:
     def backtest(self, candles: list[Candle]):
         self.candles = candles
         for i, candle in tqdm(enumerate(candles), total=len(candles), desc="Backtesting Candles"):
-            self.current_candle = candle
-            self.strategy.candles.append(candle)
+            self.strategy.store.candles.add_candle(candle)
 
             if self.strategy.should_long() and self.position is None:
                 self.enter_long(self.strategy.go_long())
