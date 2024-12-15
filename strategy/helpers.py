@@ -1,6 +1,10 @@
 import uuid
 
 import arrow
+import numpy as np
+import numpy.typing as npt
+
+from strategy.db.candle import Candle
 
 
 def generate_unique_id():
@@ -26,3 +30,32 @@ def date_diff_in_days(date1: arrow.arrow.Arrow, date2: arrow.arrow.Arrow) -> int
 
 def now_to_timestamp() -> int:
     return arrow.utcnow().int_timestamp * 1000
+
+
+def to_numpy_array(candles: list[Candle]) -> npt.NDArray:
+    return np.array(
+        [(candle.open, candle.close, candle.high, candle.low, candle.volume) for candle in candles],
+        dtype=[("open", "f8"), ("close", "f8"), ("high", "f8"), ("low", "f8"), ("volume", "f8")],
+    )
+
+
+def slice_candles(candles: np.ndarray, sequential: bool) -> npt.NDArray:
+    warmup_candles_num = 240
+    if not sequential and candles.shape[0] > warmup_candles_num:
+        candles = candles[-warmup_candles_num:]
+    return candles
+
+
+def np_shift(arr: npt.NDArray, num: int, fill_value=0) -> npt.NDArray:
+    result = np.empty_like(arr)
+
+    if num > 0:
+        result[:num] = fill_value
+        result[num:] = arr[:-num]
+    elif num < 0:
+        result[num:] = fill_value
+        result[:num] = arr[-num:]
+    else:
+        result[:] = arr
+
+    return result
