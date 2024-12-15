@@ -3,6 +3,7 @@ import time
 
 import arrow
 import requests
+from loguru import logger
 
 import strategy.helpers as sh
 from strategy.modes.import_candles_mode.drivers.base_candles_exchange import CandleExchange
@@ -41,7 +42,7 @@ class AlpacaExchange(CandleExchange):
         """Helper method to construct the headers required for Alpaca API requests."""
         return {"APCA-API-KEY-ID": self.api_key, "APCA-API-SECRET-KEY": self.api_secret}
 
-    def fetch(self, symbol: str, start_timestamp: int, timeframe: str = "1Min") -> list:
+    def fetch(self, symbol: str, start_timestamp: int, timeframe: str = "1Min") -> list[dict[str, float|str]]:
         """Fetch candle data from Alpaca."""
         url = f"{self.base_url}/stocks/{symbol}/bars"
 
@@ -87,12 +88,24 @@ class AlpacaExchange(CandleExchange):
 if __name__ == "__main__":
 
     def main():
+        from strategy.db.base import SessionLocal
+        from strategy.db.candle import Candle
+        from sqlalchemy.dialects.postgresql import insert
+
+        session = SessionLocal()
         alpaca = AlpacaExchange()
-        candles = alpaca.fetch(symbol="AAPL", start_timestamp=1622548800, timeframe="1Min")
-        print(candles)
+        candles = alpaca.fetch(symbol="AAPL", start_timestamp=alpaca.get_starting_time("AAPL"), timeframe="1Min")
+        while candles:
+            logger.info(f"Saving stock from {sh.timestamp_to_time(candles[0]['timestamp'])}")
+            statement = insert(Candle).values(candles)
+            statement = statement.on_conflict_do_nothing(
+                index_elements=["exchange", "symbol", "timeframe", "timestamp"]
+            )
+            session.execute(statement)
+            session.commit()
+            candles = alpaca.fetch(symbol="AAPL", start_timestamp=candles[-1]["timestamp"], timeframe="1Min")
+
         starting_time = alpaca.get_starting_time(symbol="AAPL")
-        print(starting_time)
         available_symbols = alpaca.get_available_symbols()
-        print(available_symbols)
 
     main()
