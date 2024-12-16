@@ -44,6 +44,7 @@ class AlpacaExchange(CandleExchange):
 
     def fetch(self, symbol: str, start_timestamp: int, timeframe: str = "1Min") -> list[dict[str, float|str]]:
         """Fetch candle data from Alpaca."""
+        logger.info(f"Getting stock data for {self._convert_timestamp_to_iso(start_timestamp)}")
         url = f"{self.base_url}/stocks/{symbol}/bars"
 
         old_timeframe = timeframe
@@ -93,17 +94,24 @@ if __name__ == "__main__":
         from sqlalchemy.dialects.postgresql import insert
 
         session = SessionLocal()
+        session.query(Candle).delete()
+        session.commit()
         alpaca = AlpacaExchange()
         candles = alpaca.fetch(symbol="AAPL", start_timestamp=alpaca.get_starting_time("AAPL"), timeframe="1Min")
-        while candles:
-            logger.info(f"Saving stock from {sh.timestamp_to_time(candles[0]['timestamp'])}")
+        total_candles_tmp = 0
+        while len(candles) > 1:
+            logger.info(f"Saving {len(candles)} stock info starting from {sh.timestamp_to_time(candles[0]['timestamp'])}")
+            total_candles_tmp += len(candles)
             statement = insert(Candle).values(candles)
             statement = statement.on_conflict_do_nothing(
                 index_elements=["exchange", "symbol", "timeframe", "timestamp"]
             )
             session.execute(statement)
             session.commit()
-            candles = alpaca.fetch(symbol="AAPL", start_timestamp=candles[-1]["timestamp"], timeframe="1Min")
+            total_candles = session.query(Candle).count()
+            logger.info(f"Total candles in the database: {total_candles}, expected: {total_candles_tmp}")
+            max_timestamp = int(max(c["timestamp"] for c in candles))
+            candles = alpaca.fetch(symbol="AAPL", start_timestamp=max_timestamp, timeframe="1Min")
 
         starting_time = alpaca.get_starting_time(symbol="AAPL")
         available_symbols = alpaca.get_available_symbols()
