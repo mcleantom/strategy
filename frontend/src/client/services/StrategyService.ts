@@ -1,0 +1,21 @@
+/* generated using openapi-typescript-codegen -- do not edit */
+/* istanbul ignore file */
+/* tslint:disable */
+/* eslint-disable */
+import type { BacktestResult } from '../models/BacktestResult';
+import type { CancelablePromise } from '../core/CancelablePromise';
+import { OpenAPI } from '../core/OpenAPI';
+import { request as __request } from '../core/request';
+export class StrategyService {
+    /**
+     * Run Strategy
+     * @returns BacktestResult Successful Response
+     * @throws ApiError
+     */
+    public static runStrategyBacktestPost(): CancelablePromise<BacktestResult> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/backtest',
+        });
+    }
+}
