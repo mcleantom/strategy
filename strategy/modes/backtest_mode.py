@@ -15,7 +15,8 @@ class Trade:
     entry_price: float
     exit_price: float
     pnl: float
-    timestamp: datetime
+    entry_timestamp: datetime
+    exit_timestamp: datetime
 
 
 class Backtester:
@@ -32,6 +33,7 @@ class Backtester:
         self.equity_curve = [initial_balance]
         self.candles = []
         self.last_order: Order | None = None
+        self.last_timestamp: int | None = None
 
     def backtest(self, candles: list[Candle]):
         self.candles = candles
@@ -39,9 +41,9 @@ class Backtester:
             self.strategy.store.candles.add_candle(candle)
 
             if self.strategy.should_long() and self.position is None:
-                self.enter_long(self.strategy.go_long())
+                self.enter_long(self.strategy.go_long(), candle)
             elif self.strategy.should_short() and self.position is None:
-                self.enter_short(self.strategy.go_short())
+                self.enter_short(self.strategy.go_short(), candle)
             if i == len(candles) - 1 or self.should_exit_position(candle):
                 self.exit_position(candle)
 
@@ -49,13 +51,14 @@ class Backtester:
             self.daily_returns.append(daily_return)
             self.equity_curve.append(self.balance)
 
-    def enter_long(self, order: Order) -> None:
+    def enter_long(self, order: Order, candle: Candle) -> None:
         self.position = "long"
         self.entry_price = order.price
         self.stop_loss = order.stop_loss
         self.take_profit = order.take_profit
         self.balance -= order.price * order.quantity
         self.last_order = order
+        self.last_timestamp = self.candles[-1].timestamp
 
     def exit_long(self, candle: Candle) -> None:
         exit_price = candle.close
@@ -68,18 +71,20 @@ class Backtester:
                 entry_price=self.entry_price,
                 exit_price=exit_price,
                 pnl=trade_pnl,
-                timestamp=sh.timestamp_to_arrow(candle.timestamp).datetime,
+                entry_timestamp=sh.timestamp_to_arrow(self.last_timestamp).datetime,
+                exit_timestamp=sh.timestamp_to_arrow(candle.timestamp).datetime,
             )
         )
         self.position = None
 
-    def enter_short(self, order: Order) -> None:
+    def enter_short(self, order: Order, candle: Candle) -> None:
         self.position = "short"
         self.entry_price = order.price
         self.stop_loss = order.stop_loss
         self.take_profit = order.take_profit
         self.balance += order.price * order.quantity
         self.last_order = order
+        self.last_timestamp = candle.timestamp
 
     def exit_short(self, candle: Candle) -> None:
         exit_price = candle.close
@@ -92,7 +97,8 @@ class Backtester:
                 entry_price=self.entry_price,
                 exit_price=exit_price,
                 pnl=trade_pnl,
-                timestamp=sh.timestamp_to_arrow(candle.timestamp).datetime,
+                entry_timestamp=sh.timestamp_to_arrow(candle.timestamp).datetime,
+                exit_timestamp=sh.timestamp_to_arrow(candle.timestamp).datetime,
             )
         )
 

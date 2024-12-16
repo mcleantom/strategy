@@ -6,10 +6,10 @@ import requests
 from loguru import logger
 
 import strategy.helpers as sh
-from strategy.modes.import_candles_mode.drivers.base_candles_exchange import CandleExchange
+from strategy.modes.import_candles_mode.drivers.base_candles_importer import CandlesImporter
 
 
-class AlpacaExchange(CandleExchange):
+class AlpacaImporter(CandlesImporter):
     def __init__(self):
         super().__init__(name="alpaca", count=10_000, rate_limit_per_second=2)
         self.base_url = "https://data.alpaca.markets/v2"
@@ -84,36 +84,3 @@ class AlpacaExchange(CandleExchange):
     def _convert_iso_to_timestamp(iso_time: str) -> int:
         """Convert an ISO 8601 formatted string to a Unix timestamp."""
         return sh.arrow_to_timestamp(arrow.get(iso_time))
-
-
-if __name__ == "__main__":
-
-    def main():
-        from strategy.db.base import SessionLocal
-        from strategy.db.candle import Candle
-        from sqlalchemy.dialects.postgresql import insert
-
-        session = SessionLocal()
-        session.query(Candle).delete()
-        session.commit()
-        alpaca = AlpacaExchange()
-        candles = alpaca.fetch(symbol="AAPL", start_timestamp=alpaca.get_starting_time("AAPL"), timeframe="1Min")
-        total_candles_tmp = 0
-        while len(candles) > 1:
-            logger.info(f"Saving {len(candles)} stock info starting from {sh.timestamp_to_time(candles[0]['timestamp'])}")
-            total_candles_tmp += len(candles)
-            statement = insert(Candle).values(candles)
-            statement = statement.on_conflict_do_nothing(
-                index_elements=["exchange", "symbol", "timeframe", "timestamp"]
-            )
-            session.execute(statement)
-            session.commit()
-            total_candles = session.query(Candle).count()
-            logger.info(f"Total candles in the database: {total_candles}, expected: {total_candles_tmp}")
-            max_timestamp = int(max(c["timestamp"] for c in candles))
-            candles = alpaca.fetch(symbol="AAPL", start_timestamp=max_timestamp, timeframe="1Min")
-
-        starting_time = alpaca.get_starting_time(symbol="AAPL")
-        available_symbols = alpaca.get_available_symbols()
-
-    main()

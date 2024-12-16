@@ -18,10 +18,10 @@ from strategy.helpers import (
     timestamp_to_arrow,
     timestamp_to_time,
 )
-from strategy.modes.import_candles_mode.drivers.alpaca import AlpacaExchange
-from strategy.modes.import_candles_mode.drivers.base_candles_exchange import CandleExchange
+from strategy.modes.import_candles_mode.drivers.alpaca_importer import AlpacaImporter
+from strategy.modes.import_candles_mode.drivers.base_candles_importer import CandlesImporter
 
-drivers: dict[str, type(CandleExchange)] = {"alpaca": AlpacaExchange}
+drivers: dict[str, type(CandlesImporter)] = {"alpaca": AlpacaImporter}
 
 
 def run(client_id: str, exchange: str, symbol: str, start_date_str: str, mode: str = "candles"):
@@ -91,7 +91,7 @@ def run(client_id: str, exchange: str, symbol: str, start_date_str: str, mode: s
 
 
 def _get_candles_from_backup_exchange(
-    exchange: str, backup_driver: CandleExchange, symbol: str, start_timestamp: int, end_timestamp: int
+    exchange: str, backup_driver: CandlesImporter, symbol: str, start_timestamp: int, end_timestamp: int
 ) -> list[dict[str, Union[str, Any]]]:
     timeframe = "1m"
     total_candles = []

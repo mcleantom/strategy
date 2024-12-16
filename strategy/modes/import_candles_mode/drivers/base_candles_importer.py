@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 import requests
 
 
-class CandleExchange(ABC):
+class CandlesImporter(ABC):
     def __init__(self, name: str, count: int, rate_limit_per_second: float):
         self.name = name
         self.count = count

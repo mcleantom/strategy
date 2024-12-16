@@ -1,6 +1,6 @@
 from enum import Enum
 from fastapi import APIRouter
-from strategy.modes.import_candles_mode.drivers.alpaca import AlpacaExchange
+from strategy.modes.import_candles_mode import drivers
 
 
 class Exchange(str, Enum):
@@ -12,4 +12,4 @@ exchanges_router = APIRouter(tags=["Exchanges"])
 
 @exchanges_router.get("/exchange/{exchange}/symbols")
 def get_exchanges_symbols(exchange: Exchange) -> list[str]:
-    return AlpacaExchange().get_available_symbols()
+    return drivers[exchange.value]().get_available_symbols()
