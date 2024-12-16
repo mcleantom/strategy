@@ -12,3 +12,4 @@ tqdm
 pandas
 ta-lib-easy
 numpy
+uvicorn

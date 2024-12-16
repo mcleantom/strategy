@@ -1,0 +1,1 @@
+from strategy.app import app
