@@ -1,6 +1,6 @@
 fastapi
 click
-sqlalchemy
+sqlalchemy[asyncio]
 arrow
 requests
 pydash
@@ -13,3 +13,5 @@ pandas
 ta-lib-easy
 numpy
 uvicorn
+pydantic
+asyncpg
