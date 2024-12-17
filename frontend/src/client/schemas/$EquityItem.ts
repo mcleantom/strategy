@@ -2,16 +2,15 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
-export const $EquityCurveItem = {
+export const $EquityItem = {
     properties: {
-        equity: {
+        value: {
             type: 'number',
             isRequired: true,
         },
-        date: {
-            type: 'string',
+        unix_seconds: {
+            type: 'number',
             isRequired: true,
-            format: 'date-time',
         },
     },
 } as const;

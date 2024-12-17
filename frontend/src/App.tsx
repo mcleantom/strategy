@@ -24,6 +24,12 @@ function App() {
       height: chartContainerRef.current.clientHeight,
       layout: {
         attributionLogo: false
+      },
+      timeScale: {
+        minBarSpacing: 0.0005,
+        rightOffset: 10,
+        fixLeftEdge: false,
+        fixRightEdge: false
       }
     });
 
@@ -33,8 +39,8 @@ function App() {
     });
     const equityCurveData = backtestedResult.equity_curve
     .map((item) => ({
-      time: new Date(item.date).toISOString().split('T')[0],
-      value: item.equity,
+      time: item.unix_seconds,
+      value: item.value,
     }))
     .sort((a, b) => new Date(a.time).getTime() - new Date(b.time).getTime())
     .filter((item, index, array) => index === 0 || item.time !== array[index - 1].time);
@@ -42,7 +48,7 @@ function App() {
 
     const markers = [
       {
-        time: new Date(backtestedResult.equity_curve[0].date),
+        time: backtestedResult.equity_curve[0].unix_seconds,
         position: 'belowBar',
         color: '#f68410',
         shape: 'circle',
@@ -57,7 +63,7 @@ function App() {
     });
     const baselineCurveData = backtestedResult.baseline
     .map((item) => ({
-      time: new Date(item.date).toISOString().split('T')[0],
+      time: item.unix_seconds,
       value: item.close,
     }))
     .sort((a, b) => new Date(a.time).getTime() - new Date(b.time).getTime())
@@ -71,8 +77,8 @@ function App() {
   }, [backtestedResult]);
 
   return (
-    <div className="App" style={{width: "100vw", height: "100vh"}}>
-      <div ref={chartContainerRef} style={{ position: 'relative', width: '100%', height: '100%' }} />
+    <div className="App">
+      <div ref={chartContainerRef} style={{ position: 'relative', width: '500px', height: '300px' }} />
     </div>
   );
 }

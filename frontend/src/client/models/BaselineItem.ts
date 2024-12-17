@@ -4,6 +4,6 @@
 /* eslint-disable */
 export type BaselineItem = {
     close: number;
-    date: string;
+    unix_seconds: number;
 };
 

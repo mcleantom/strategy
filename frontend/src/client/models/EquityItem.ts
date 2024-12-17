@@ -2,8 +2,8 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
-export type EquityCurveItem = {
-    equity: number;
-    date: string;
+export type EquityItem = {
+    value: number;
+    unix_seconds: number;
 };
 

@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from datetime import datetime
+from collections import namedtuple
 
 import pandas as pd
 from tqdm import tqdm
@@ -19,6 +20,12 @@ class Trade:
     exit_timestamp: datetime
 
 
+@dataclass
+class Equity:
+    value: float
+    date: datetime
+
+
 class Backtester:
     def __init__(self, strategy: Strategy, initial_balance: float = 100_000):
         self.strategy = strategy
@@ -30,13 +37,17 @@ class Backtester:
         self.stop_loss = None
         self.take_profit = None
         self.daily_returns = []
-        self.equity_curve = [initial_balance]
+        self.equity_curve: list[Equity] = []
         self.candles = []
         self.last_order: Order | None = None
         self.last_timestamp: int | None = None
 
     def backtest(self, candles: list[Candle]):
         self.candles = candles
+        self.equity_curve.append(Equity(
+            value=self.balance,
+            date=sh.timestamp_to_arrow(candles[0].timestamp).datetime
+        ))
         for i, candle in tqdm(enumerate(candles), total=len(candles), desc="Backtesting Candles"):
             self.strategy.store.candles.add_candle(candle)
 
@@ -47,9 +58,12 @@ class Backtester:
             if i == len(candles) - 1 or self.should_exit_position(candle):
                 self.exit_position(candle)
 
-            daily_return = (self.balance - self.equity_curve[-1]) / self.equity_curve[-1]
+            daily_return = (self.balance - self.equity_curve[-1].value) / self.equity_curve[-1].value
             self.daily_returns.append(daily_return)
-            self.equity_curve.append(self.balance)
+            self.equity_curve.append(Equity(
+                value=self.balance,
+                date=sh.timestamp_to_arrow(candle.timestamp).datetime
+            ))
 
     def enter_long(self, order: Order, candle: Candle) -> None:
         self.position = "long"
@@ -64,7 +78,7 @@ class Backtester:
         exit_price = candle.close
         trade_pnl = (exit_price - self.entry_price) * self.last_order.quantity
         self.pnl += trade_pnl
-        self.balance += trade_pnl
+        self.balance += exit_price * self.last_order.quantity
         self.trades.append(
             Trade(
                 type="long",

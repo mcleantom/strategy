@@ -8,10 +8,9 @@ export const $BaselineItem = {
             type: 'number',
             isRequired: true,
         },
-        date: {
-            type: 'string',
+        unix_seconds: {
+            type: 'number',
             isRequired: true,
-            format: 'date-time',
         },
     },
 } as const;

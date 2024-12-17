@@ -14,7 +14,7 @@ export const $BacktestResult = {
         equity_curve: {
             type: 'array',
             contains: {
-                type: 'EquityCurveItem',
+                type: 'EquityItem',
             },
             isRequired: true,
         },
