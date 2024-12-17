@@ -1,6 +1,5 @@
 from dataclasses import dataclass
 from datetime import datetime
-from collections import namedtuple
 
 import pandas as pd
 from tqdm import tqdm
@@ -50,7 +49,7 @@ class Backtester:
         ))
         for i, candle in tqdm(enumerate(candles), total=len(candles), desc="Backtesting Candles"):
             self.strategy.store.candles.add_candle(candle)
-
+            self.strategy._available_margin = self.balance
             if self.strategy.should_long() and self.position is None:
                 self.enter_long(self.strategy.go_long(), candle)
             elif self.strategy.should_short() and self.position is None:
@@ -122,8 +121,8 @@ class Backtester:
             should_exit = True
         elif self.take_profit and candle.high >= self.take_profit:
             should_exit = True
-        elif self.strategy.should_cancel_entry():
-            should_exit = True
+        # elif self.strategy.should_cancel_entry():
+        #     should_exit = True
         return should_exit
 
     def exit_position(self, candle: Candle):
