@@ -35,3 +35,43 @@ def import_candles(exchange: str, symbol: str, start_date: datetime.date):
         symbol=symbol,
         start_date_str=start_date.strftime("%Y-%m-%d")
     )
+
+
+class GetCandlesResponseItem(BaseModel):
+    time: int
+    open: float
+    high: float
+    low: float
+    close: float
+
+
+@candles_router.get("/candles/{exchange}/{symbol}", response_model=list[GetCandlesResponseItem])
+async def get_candles(
+        exchange: str,
+        symbol: str,
+        start_time: datetime.datetime,
+        end_time: datetime.datetime,
+        session: SessionDep
+) -> list[GetCandlesResponseItem]:
+    statement = (
+        select(Candle)
+        .where(
+            Candle.exchange == exchange,
+            Candle.symbol == symbol,
+            Candle.timestamp >= int(start_time.timestamp() * 1000),
+            Candle.timestamp <= int(end_time.timestamp() * 1000)
+        )
+        .order_by(Candle.timestamp.asc())
+    )
+    result = await session.execute(statement)
+    candles = result.scalars().all()
+    return [
+        GetCandlesResponseItem(
+            time=int(candle.timestamp / 1000),
+            open=candle.open,
+            high=candle.high,
+            low=candle.low,
+            close=candle.close,
+        )
+        for candle in candles
+    ]

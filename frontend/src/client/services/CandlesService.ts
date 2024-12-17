@@ -2,6 +2,7 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
+import type { GetCandlesResponseItem } from '../models/GetCandlesResponseItem';
 import type { GetTickersResponseItem } from '../models/GetTickersResponseItem';
 import type { CancelablePromise } from '../core/CancelablePromise';
 import { OpenAPI } from '../core/OpenAPI';
@@ -41,6 +42,38 @@ export class CandlesService {
             },
             query: {
                 'start_date': startDate,
+            },
+            errors: {
+                422: `Validation Error`,
+            },
+        });
+    }
+    /**
+     * Get Candles
+     * @returns GetCandlesResponseItem Successful Response
+     * @throws ApiError
+     */
+    public static getCandlesCandlesExchangeSymbolGet({
+        exchange,
+        symbol,
+        startTime,
+        endTime,
+    }: {
+        exchange: string,
+        symbol: string,
+        startTime: string,
+        endTime: string,
+    }): CancelablePromise<Array<GetCandlesResponseItem>> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/candles/{exchange}/{symbol}',
+            path: {
+                'exchange': exchange,
+                'symbol': symbol,
+            },
+            query: {
+                'start_time': startTime,
+                'end_time': endTime,
             },
             errors: {
                 422: `Validation Error`,
