@@ -1,8 +1,5 @@
-import numpy as np
 import numpy.typing as npt
 import talib
-
-from strategy.db.candle import Candle
 
 
 def ad(candles: npt.NDArray, sequential: bool = False) -> float | npt.NDArray:

@@ -42,7 +42,7 @@ class AlpacaImporter(CandlesImporter):
         """Helper method to construct the headers required for Alpaca API requests."""
         return {"APCA-API-KEY-ID": self.api_key, "APCA-API-SECRET-KEY": self.api_secret}
 
-    def fetch(self, symbol: str, start_timestamp: int, timeframe: str = "1Min") -> list[dict[str, float|str]]:
+    def fetch(self, symbol: str, start_timestamp: int, timeframe: str = "1Min") -> list[dict[str, float | str]]:
         """Fetch candle data from Alpaca."""
         logger.info(f"Getting stock data for {self._convert_timestamp_to_iso(start_timestamp)}")
         url = f"{self.base_url}/stocks/{symbol}/bars"

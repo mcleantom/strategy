@@ -55,7 +55,7 @@ class BacktestResult(BaseModel):
 @run_strategy_router.post("/backtest")
 async def run_strategy(session: SessionDep) -> BacktestResult:
     logger.info(f"Loading candles")
-    stmt = select(Candle).where(Candle.symbol == "AAPL").order_by(Candle.timestamp.asc())#.limit(10_000)
+    stmt = select(Candle).where(Candle.symbol == "AAPL").order_by(Candle.timestamp.asc())  #.limit(10_000)
     logger.info(f"Loaded candles")
     result = await session.execute(stmt)
     candles = result.scalars().all()

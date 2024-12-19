@@ -1,7 +1,6 @@
-from strategy.helpers import slice_candles, to_numpy_array
+from strategy.helpers import slice_candles
 import talib
 import numpy.typing as npt
-from strategy.db.candle import Candle
 
 
 def atr(candles: npt.NDArray, period: int = 14, sequential: bool = False) -> float | npt.NDArray:

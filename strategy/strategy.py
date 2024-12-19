@@ -1,8 +1,8 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
+import numpy.typing as npt
 
 from strategy.store.store import Store
-from strategy.db.candle import Candle
 from strategy.models.position import Position, PositionType
 
 
@@ -55,14 +55,14 @@ class Strategy(ABC):
 
     @property
     def price(self) -> float:
-        return self.candles[-1].close
+        return float(self.candles["close"][-1])
 
     @property
     def available_margin(self) -> float:
         return self._available_margin
 
     @property
-    def candles(self) -> list[Candle]:
+    def candles(self) -> npt.NDArray:
         return self.store.candles.candles
 
     @property

@@ -1,10 +1,7 @@
 from collections import namedtuple
 
-import numpy as np
 import numpy.typing as npt
 import talib
-
-from strategy.db.candle import Candle
 
 AC = namedtuple("AC", ["osc", "change"])
 

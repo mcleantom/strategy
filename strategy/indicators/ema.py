@@ -1,8 +1,6 @@
-import numpy as np
 import numpy.typing as npt
 import talib
-from strategy.helpers import slice_candles, to_numpy_array
-from strategy.db.candle import Candle
+from strategy.helpers import slice_candles
 
 
 def ema(candles: npt.NDArray, period: int = 5, source_type: str = "close", sequential: bool = False) -> float | npt.NDArray:

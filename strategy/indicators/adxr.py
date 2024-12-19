@@ -1,8 +1,5 @@
-import numpy as np
 import numpy.typing as npt
 import talib
-
-from strategy.db.candle import Candle
 
 
 def adxr(candles: npt.NDArray, period: int = 14, sequential: bool = False) -> float | npt.NDArray:
@@ -12,5 +9,5 @@ def adxr(candles: npt.NDArray, period: int = 14, sequential: bool = False) -> fl
     high = candles["high"]
     low = candles["low"]
     close = candles["close"]
-    res = talib.AD(high, low, close, timeperiod=period)
+    res = talib.ADXR(high, low, close, timeperiod=period)
     return res if sequential else res[-1]

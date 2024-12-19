@@ -1,8 +1,7 @@
 import numpy.typing as npt
 import talib
 
-from strategy.db.candle import Candle
-from strategy.helpers import slice_candles, to_numpy_array
+from strategy.helpers import slice_candles
 
 
 def adosc(
