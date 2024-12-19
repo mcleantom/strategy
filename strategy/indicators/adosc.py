@@ -6,12 +6,12 @@ from strategy.helpers import slice_candles, to_numpy_array
 
 
 def adosc(
-    candles: list[Candle], fast_period: int = 3, slow_period: int = 10, sequential: bool = False
+    candles: npt.NDArray, fast_period: int = 3, slow_period: int = 10, sequential: bool = False
 ) -> float | npt.NDArray:
     """
     ADOSC - Chaikin A/D Oscillator
     """
-    candles = slice_candles(to_numpy_array(candles), sequential)
+    candles = slice_candles(candles, sequential)
     high = candles["high"]
     low = candles["low"]
     close = candles["close"]

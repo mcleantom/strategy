@@ -5,9 +5,9 @@ import talib
 from strategy.db.candle import Candle
 
 
-def adx(candles: list[Candle], period: int = 14, sequential: bool = False) -> float | npt.NDArray:
-    high = np.array([c.high for c in candles])
-    low = np.array([c.low for c in candles])
-    close = np.array([c.close for c in candles])
+def adx(candles: npt.NDArray, period: int = 14, sequential: bool = False) -> float | npt.NDArray:
+    high = candles["high"]
+    low = candles["low"]
+    close = candles["close"]
     res = talib.ADX(high, low, close, timeperiod=period)
     return res if sequential else res[-1]

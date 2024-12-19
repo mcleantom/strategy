@@ -1,6 +1,7 @@
 from collections import namedtuple
 
 import numpy as np
+import numpy.typing as npt
 import talib
 
 from strategy.db.candle import Candle
@@ -8,9 +9,9 @@ from strategy.db.candle import Candle
 AC = namedtuple("AC", ["osc", "change"])
 
 
-def acosc(candles: list[Candle], sequential: bool = False) -> AC:
-    high = np.array([c.high for c in candles])
-    low = np.array([c.low for c in candles])
+def acosc(candles: npt.NDArray, sequential: bool = False) -> AC:
+    high = candles["high"]
+    low = candles["low"]
     med = talib.MEDPRICE(high, low)
     ao = talib.SMA(med, 5) - talib.SMA(med, 34)
 

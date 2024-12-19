@@ -9,11 +9,11 @@ from strategy.helpers import np_shift, slice_candles, to_numpy_array
 AG = namedtuple("AG", ["jaw", "teeth", "lips"])
 
 
-def alligator(candles: list[Candle], source_type: str = "close", sequential: bool = False) -> AG:
+def alligator(candles: npt.NDArray, source_type: str = "close", sequential: bool = False) -> AG:
     """
     Alligator
     """
-    candles = slice_candles(to_numpy_array(candles), sequential)
+    candles = slice_candles(candles, sequential)
     source = candles[source_type]
     jaw = np_shift(numpy_ewma(source, 13), 8, fill_value=np.nan)
     teeth = np_shift(numpy_ewma(source, 8), 5, fill_value=np.nan)
