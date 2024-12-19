@@ -50,22 +50,38 @@ class Backtester:
         warmup_candles = 250
         for i in range(warmup_candles):
             self.strategy.store.candles.add_candle(candles[i])
-        for i, candle in tqdm(enumerate(candles[warmup_candles:]), total=len(candles[warmup_candles:]), desc="Backtesting Candles"):
+
+        candles = candles[warmup_candles:]
+        progress_bar = tqdm(
+            enumerate(candles),
+            total=len(candles),
+            desc="Backtesting Candles"
+        )
+
+        for i, candle in progress_bar:
             self.strategy.store.candles.add_candle(candle)
             self.strategy._available_margin = self.balance
             if self.strategy.should_long() and self.position is None:
                 self.enter_long(self.strategy.go_long(), candle)
             elif self.strategy.should_short() and self.position is None:
                 self.enter_short(self.strategy.go_short(), candle)
-            if i == len(candles) - 1 or self.should_exit_position(candle):
+            if i == len(candles) - 1 or self.should_exit_position(candle) and self.position is not None:
                 self.exit_position(candle)
-
+            if self.balance <= 0:
+                raise RuntimeError("Ran out of money")
             daily_return = (self.balance - self.equity_curve[-1].value) / self.equity_curve[-1].value
             self.daily_returns.append(daily_return)
             self.equity_curve.append(Equity(
                 value=self.balance,
                 date=sh.timestamp_to_arrow(candle.timestamp).datetime
             ))
+
+            progress_bar.set_postfix({
+                "Balance": f"{self.balance:.2f}",
+                "Trades": len(self.trades)
+            })
+
+        progress_bar.close()
 
     def enter_long(self, order: Order, candle: Candle) -> None:
         self.position = "long"
@@ -120,12 +136,18 @@ class Backtester:
 
     def should_exit_position(self, candle: Candle) -> bool:
         should_exit = False
-        if self.stop_loss and candle.low <= self.stop_loss:
+        if self.position == "long":
+            if self.stop_loss and candle.close <= self.stop_loss:
+                should_exit = True
+            elif self.take_profit and candle.close >= self.take_profit:
+                should_exit = True
+        elif self.position == "short":
+            if self.stop_loss and candle.close >= self.stop_loss:
+                should_exit = True
+            elif self.take_profit and candle.close <= self.take_profit:
+                should_exit = True
+        if self.strategy.should_cancel_entry():
             should_exit = True
-        elif self.take_profit and candle.high >= self.take_profit:
-            should_exit = True
-        # elif self.strategy.should_cancel_entry():
-        #     should_exit = True
         return should_exit
 
     def exit_position(self, candle: Candle):
@@ -133,6 +155,7 @@ class Backtester:
             self.exit_long(candle)
         elif self.position == "short":
             self.exit_short(candle)
+        self.position = None
 
     def generate_report(self):
         import quantstats as qs

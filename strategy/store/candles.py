@@ -5,7 +5,7 @@ from strategy.helpers import to_numpy_array, to_candle, to_structured_array
 
 class CandleStore:
     def __init__(self):
-        self.candles = CircularBuffer((1000, 5), drop_at=50)
+        self.candles = CircularBuffer((1000, 5))
         self.candles.array = to_structured_array(self.candles.array)
 
     def add_candle(self, candle: Candle):

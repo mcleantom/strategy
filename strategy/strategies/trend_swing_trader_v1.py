@@ -26,24 +26,30 @@ class TrendSwingTrader(Strategy):
 
     def go_long(self) -> Order:
         entry = self.price
-        stop = entry - ta.atr(self.candles) * 2
-        qty = utils.risk_to_qty(self.available_margin, 5, entry, stop, fee_rate=self.fee_rate)
+        qty = (self.available_margin / self.price) * 0.2
+        stop_loss = entry - ta.atr(self.candles) * 2
+        take_profit = None
         return Order(
             quantity=qty,
-            price=entry
+            price=entry,
+            stop_loss=stop_loss,
+            take_profit=take_profit
         )
 
     def should_short(self) -> bool:
-        return self.trend == 1 and self.adx
+        return self.trend == -1 and self.adx
 
     def go_short(self):
         entry = self.price
-        stop = entry + ta.atr(self.candles) * 2
-        qty = utils.risk_to_qty(self.available_margin, 5, entry, stop, fee_rate=self.fee_rate) * 2
+        qty = (self.available_margin / entry) * 0.2
+        stop_loss = entry + ta.atr(self.candles) * 2
+        take_profit = None
         return Order(
             quantity=qty,
-            price=entry
+            price=entry,
+            stop_loss=stop_loss,
+            take_profit=take_profit
         )
 
     def should_cancel_entry(self) -> bool:
-        return True
+        return False

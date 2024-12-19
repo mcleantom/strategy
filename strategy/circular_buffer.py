@@ -6,9 +6,13 @@ class CircularBuffer:
     def __init__(self, shape: tuple, drop_at: int = None):
         self.index = -1
         self.array = np.zeros(shape)
-        self.bucket_size = shape[0]
+        # self.bucket_size = shape[0]
         self.shape = shape
         self.drop_at = drop_at
+
+    @property
+    def bucket_size(self):
+        return self.array.shape[0]
 
     def __str__(self):
         return str(self.array[:self.index + 1])
@@ -17,6 +21,8 @@ class CircularBuffer:
         return self.index + 1
 
     def __getitem__(self, i):
+        if isinstance(i, str):
+            return self.array[i][:self.index+1]
         if isinstance(i, slice):
             start, stop, step = i.indices(self.index + 1)
             return self.array[start:stop]
@@ -54,8 +60,7 @@ class CircularBuffer:
         self.index += 1
 
         if self.index != 0 and (self.index + 1) % self.bucket_size == 0:
-            new_bucket = np.zeros(self.shape)
-            self.array = np.concatenate((self.array, new_bucket), axis=0)
+            self.array = np.concatenate((self.array, np.zeros_like(self.array)), axis=0)
 
         if (
             self.drop_at is not None

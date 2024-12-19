@@ -55,7 +55,7 @@ class Strategy(ABC):
 
     @property
     def price(self) -> float:
-        return float(self.candles["close"][-1])
+        return float(self.candles[-1]["close"])
 
     @property
     def available_margin(self) -> float:

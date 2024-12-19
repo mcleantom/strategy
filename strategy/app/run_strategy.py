@@ -55,10 +55,10 @@ class BacktestResult(BaseModel):
 @run_strategy_router.post("/backtest")
 async def run_strategy(session: SessionDep) -> BacktestResult:
     logger.info(f"Loading candles")
-    stmt = select(Candle).where(Candle.symbol == "AAPL").order_by(Candle.timestamp.asc())  #.limit(10_000)
-    logger.info(f"Loaded candles")
+    stmt = select(Candle).where(Candle.symbol == "AAPL").order_by(Candle.timestamp.asc())#.limit(10_000)
     result = await session.execute(stmt)
     candles = result.scalars().all()
+    logger.info(f"Loaded candles")
     strategy = TrendSwingTrader()
     backtester = Backtester(strategy=strategy, initial_balance=10_000)
     backtester.backtest(candles)
@@ -67,21 +67,21 @@ async def run_strategy(session: SessionDep) -> BacktestResult:
 
     asset_amount = initial_balance / initial_price
     baseline = []
-    for candle in candles:
-        buy_and_hold_equity = asset_amount * candle.close
-        baseline.append(
-            BaselineItem(
-                close=buy_and_hold_equity,
-                unix_seconds=candle.timestamp // 1000  # Ensure Unix seconds
-            )
-        )
+    # for candle in candles:
+    #     buy_and_hold_equity = asset_amount * candle.close
+    #     baseline.append(
+    #         BaselineItem(
+    #             close=buy_and_hold_equity,
+    #             unix_seconds=candle.timestamp // 1000  # Ensure Unix seconds
+    #         )
+    #     )
 
     equity_curve = [
         EquityItem(
             value=item.value,
-            unix_seconds=int(item.date.timestamp())  # Convert datetime to Unix seconds
+            unix_seconds=int(item.date.timestamp())
         )
-        for item in backtester.equity_curve
+        for i, item in enumerate(backtester.equity_curve)
     ]
 
     return BacktestResult(
