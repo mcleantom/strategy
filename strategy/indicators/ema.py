@@ -5,9 +5,7 @@ from strategy.helpers import slice_candles, to_numpy_array
 from strategy.db.candle import Candle
 
 
-def ema(candles: list[Candle], period: int = 5, source_type: str = "close", sequential: bool = False) -> float | npt.NDArray:
-    candles = to_numpy_array(candles)
-
+def ema(candles: npt.NDArray, period: int = 5, source_type: str = "close", sequential: bool = False) -> float | npt.NDArray:
     candles = slice_candles(candles, sequential)
     source = candles[source_type]
 

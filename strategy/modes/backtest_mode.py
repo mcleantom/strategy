@@ -47,7 +47,10 @@ class Backtester:
             value=self.balance,
             date=sh.timestamp_to_arrow(candles[0].timestamp).datetime
         ))
-        for i, candle in tqdm(enumerate(candles), total=len(candles), desc="Backtesting Candles"):
+        warmup_candles = 250
+        for i in range(warmup_candles):
+            self.strategy.store.candles.add_candle(candles[i])
+        for i, candle in tqdm(enumerate(candles[warmup_candles:]), total=len(candles[warmup_candles:]), desc="Backtesting Candles"):
             self.strategy.store.candles.add_candle(candle)
             self.strategy._available_margin = self.balance
             if self.strategy.should_long() and self.position is None:

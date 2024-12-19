@@ -8,6 +8,7 @@ from strategy.strategy import Order, Strategy
 from strategy.app.deps import SessionDep
 from sqlalchemy.future import select
 from strategy.strategies.trend_swing_trader_v1 import TrendSwingTrader
+from loguru import logger
 
 
 class ExampleStrategy(Strategy):
@@ -53,7 +54,9 @@ class BacktestResult(BaseModel):
 
 @run_strategy_router.post("/backtest")
 async def run_strategy(session: SessionDep) -> BacktestResult:
-    stmt = select(Candle).where(Candle.symbol == "AAPL").order_by(Candle.timestamp.asc()).limit(1000)
+    logger.info(f"Loading candles")
+    stmt = select(Candle).where(Candle.symbol == "AAPL").order_by(Candle.timestamp.asc())#.limit(10_000)
+    logger.info(f"Loaded candles")
     result = await session.execute(stmt)
     candles = result.scalars().all()
     strategy = TrendSwingTrader()

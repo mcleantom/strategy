@@ -39,6 +39,31 @@ def to_numpy_array(candles: list[Candle]) -> npt.NDArray:
     )
 
 
+def to_structured_array(array: npt.NDArray, field_names: list[str] | None = None) -> npt.NDArray:
+    if field_names is None:
+        field_names = ["open", "close", "high", "low", "volume"]
+    if array.ndim != 2:
+        raise ValueError("Input array must be two dimensional")
+    if len(field_names) != array.shape[1]:
+        raise ValueError("Number of field names must match the number of columns in the array")
+    dtype = [(name, array.dtype) for name in field_names]
+    structured_array = np.zeros(array.shape[0], dtype=dtype)
+    for i, name in enumerate(field_names):
+        structured_array[name] = array[:, i]
+    return structured_array
+
+
+def to_candle(arr: npt.NDArray) -> Candle:
+    assert len(arr) == 1
+    return Candle(
+        open=arr[0],
+        close=arr[1],
+        high=arr[2],
+        low=arr[3],
+        volume=arr[4]
+    )
+
+
 def slice_candles(candles: np.ndarray, sequential: bool) -> npt.NDArray:
     warmup_candles_num = 240
     if not sequential and candles.shape[0] > warmup_candles_num:
