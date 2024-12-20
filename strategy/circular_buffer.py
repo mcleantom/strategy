@@ -1,4 +1,5 @@
 import numpy as np
+import numpy.typing as npt
 
 
 class CircularBuffer:
@@ -56,7 +57,7 @@ class CircularBuffer:
 
         self.array[i] = item
 
-    def append(self, item: np.ndarray) -> None:
+    def append(self, item: npt.ArrayLike) -> None:
         self.index += 1
 
         if self.index != 0 and (self.index + 1) % self.bucket_size == 0:

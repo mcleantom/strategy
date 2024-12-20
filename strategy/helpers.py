@@ -32,25 +32,38 @@ def now_to_timestamp() -> int:
     return arrow.utcnow().int_timestamp * 1000
 
 
-def to_numpy_array(candles: list[Candle]) -> npt.NDArray:
+def to_numpy_array(candles: list[Candle]) -> npt.ArrayLike:
     return np.array(
-        [(candle.open, candle.close, candle.high, candle.low, candle.volume) for candle in candles],
-        dtype=[("open", "f8"), ("close", "f8"), ("high", "f8"), ("low", "f8"), ("volume", "f8")],
+        [(candle.timestamp, candle.open, candle.close, candle.high, candle.low, candle.volume) for candle in candles],
+        dtype=[("timestamp", "i8"), ("open", "f8"), ("close", "f8"), ("high", "f8"), ("low", "f8"), ("volume", "f8")],
     )
 
 
-def to_structured_array(array: npt.NDArray, field_names: list[str] | None = None) -> npt.NDArray:
-    if field_names is None:
-        field_names = ["open", "close", "high", "low", "volume"]
-    if array.ndim != 2:
-        raise ValueError("Input array must be two dimensional")
-    if len(field_names) != array.shape[1]:
-        raise ValueError("Number of field names must match the number of columns in the array")
-    dtype = [(name, array.dtype) for name in field_names]
+def to_structured_array(array: npt.NDArray) -> npt.NDArray:
+    # Validate input dimensions
+    if array.ndim != 2 or array.shape[1] != 6:
+        raise ValueError("Input array must be two-dimensional with exactly 6 columns.")
+
+    # Create a structured array with the specified dtype
+    dtype = [("timestamp", "i8"), ("open", "f8"), ("close", "f8"), ("high", "f8"), ("low", "f8"), ("volume", "f8")]
     structured_array = np.zeros(array.shape[0], dtype=dtype)
-    for i, name in enumerate(field_names):
-        structured_array[name] = array[:, i]
+
+    # Assign data to structured fields
+    structured_array["timestamp"] = array[:, 0]
+    structured_array["open"] = array[:, 1]
+    structured_array["close"] = array[:, 2]
+    structured_array["high"] = array[:, 3]
+    structured_array["low"] = array[:, 4]
+    structured_array["volume"] = array[:, 5]
+
     return structured_array
+    # if array.ndim != 2:
+    #     raise ValueError("Input array must be two dimensional")
+    # dtype = [("timestamp", "i8"), ("open", "f8"), ("close", "f8"), ("high", "f8"), ("low", "f8"), ("volume", "f8")]
+    # structured_array = np.zeros(array.shape[0], dtype=dtype)
+    # for i, name in enumerate(field_names):
+    #     structured_array[name] = array[:, i]
+    # return structured_array
 
 
 def to_candle(arr: npt.NDArray) -> Candle:

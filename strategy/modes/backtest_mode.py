@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from datetime import datetime
 
+import numpy.typing as npt
 import pandas as pd
 from tqdm import tqdm
 from loguru import logger
@@ -8,6 +9,9 @@ from loguru import logger
 import strategy.helpers as sh
 from strategy.db.candle import Candle
 from strategy.strategy import Order, Strategy
+from strategy.modes.import_candles_mode import generate_candles_from_one_minute_candles
+from strategy.models.enums import ETimeframe
+from strategy.helpers import to_numpy_array
 
 
 @dataclass
@@ -28,7 +32,7 @@ class Equity:
 
 
 class Backtester:
-    def __init__(self, strategy: Strategy, initial_balance: float = 100_000):
+    def __init__(self, strategy: Strategy, initial_balance: float = 100_000, timeframe: ETimeframe = ETimeframe.MINUTE_1):
         self.strategy = strategy
         self.balance = initial_balance
         self.position = None
@@ -42,12 +46,16 @@ class Backtester:
         self.candles = []
         self.last_order: Order | None = None
         self.last_timestamp: int | None = None
+        self.timeframe = timeframe
 
     def backtest(self, candles: list[Candle]):
+        candles = to_numpy_array(candles)
+        candles = generate_candles_from_one_minute_candles(candles, self.timeframe)
         self.candles = candles
+
         self.equity_curve.append(Equity(
             value=self.balance,
-            date=sh.timestamp_to_arrow(candles[0].timestamp).datetime
+            date=sh.timestamp_to_arrow(int(candles["timestamp"][0])).datetime
         ))
         warmup_candles = 250
         for i in range(warmup_candles):
@@ -75,7 +83,7 @@ class Backtester:
             self.daily_returns.append(daily_return)
             self.equity_curve.append(Equity(
                 value=self.balance,
-                date=sh.timestamp_to_arrow(candle.timestamp).datetime
+                date=sh.timestamp_to_arrow(int(candle["timestamp"])).datetime
             ))
 
             progress_bar.set_postfix({
@@ -85,17 +93,17 @@ class Backtester:
 
         progress_bar.close()
 
-    def enter_long(self, order: Order, candle: Candle) -> None:
+    def enter_long(self, order: Order, candle: npt.NDArray) -> None:
         self.position = "long"
         self.entry_price = order.price
         self.stop_loss = order.stop_loss
         self.take_profit = order.take_profit
         # self.balance -= order.price * order.quantity
         self.last_order = order
-        self.last_timestamp = self.candles[-1].timestamp
+        self.last_timestamp = int(candle["timestamp"])
 
-    def exit_long(self, candle: Candle) -> None:
-        exit_price = candle.close
+    def exit_long(self, candle: npt.NDArray) -> None:
+        exit_price = float(candle["close"])
         trade_pnl = (exit_price - self.entry_price) * self.last_order.quantity
         self.pnl += trade_pnl
         self.balance += trade_pnl  # exit_price * self.last_order.quantity
@@ -107,22 +115,22 @@ class Backtester:
                 quantity=self.last_order.quantity,
                 pnl=trade_pnl,
                 entry_timestamp=sh.timestamp_to_arrow(self.last_timestamp).datetime,
-                exit_timestamp=sh.timestamp_to_arrow(candle.timestamp).datetime,
+                exit_timestamp=sh.timestamp_to_arrow(int(candle["timestamp"])).datetime,
             )
         )
         self.position = None
 
-    def enter_short(self, order: Order, candle: Candle) -> None:
+    def enter_short(self, order: Order, candle: npt.NDArray) -> None:
         self.position = "short"
         self.entry_price = order.price
         self.stop_loss = order.stop_loss
         self.take_profit = order.take_profit
         # self.balance += order.price * order.quantity
         self.last_order = order
-        self.last_timestamp = candle.timestamp
+        self.last_timestamp = int(candle["timestamp"])
 
-    def exit_short(self, candle: Candle) -> None:
-        exit_price = candle.close
+    def exit_short(self, candle: npt.NDArray) -> None:
+        exit_price = float(candle["close"])
         trade_pnl = (self.entry_price - exit_price) * self.last_order.quantity
         self.pnl += trade_pnl
         self.balance -= trade_pnl  # exit_price * self.last_order.quantity
@@ -134,39 +142,38 @@ class Backtester:
                 quantity=self.last_order.quantity,
                 pnl=trade_pnl,
                 entry_timestamp=sh.timestamp_to_arrow(self.last_timestamp).datetime,
-                exit_timestamp=sh.timestamp_to_arrow(candle.timestamp).datetime,
+                exit_timestamp=sh.timestamp_to_arrow(int(candle["timestamp"])).datetime,
             )
         )
 
-    def should_exit_position(self, candle: Candle) -> bool:
+    def should_exit_position(self, candle: npt.NDArray) -> bool:
         should_exit = False
         if self.position == "long":
-            if self.stop_loss and candle.close <= self.stop_loss:
+            if self.stop_loss and float(candle["close"]) <= self.stop_loss:
                 should_exit = True
-            elif self.take_profit and candle.close >= self.take_profit:
+            elif self.take_profit and float(candle["close"]) >= self.take_profit:
                 should_exit = True
         elif self.position == "short":
-            if self.stop_loss and candle.close >= self.stop_loss:
+            if self.stop_loss and float(candle["close"]) >= self.stop_loss:
                 should_exit = True
-            elif self.take_profit and candle.close <= self.take_profit:
+            elif self.take_profit and float(candle["close"]) <= self.take_profit:
                 should_exit = True
         if self.strategy.should_cancel_entry():
             should_exit = True
         return should_exit
 
-    def exit_position(self, candle: Candle):
+    def exit_position(self, candle: npt.NDArray):
         if self.position == "long":
             self.exit_long(candle)
         elif self.position == "short":
             self.exit_short(candle)
         self.position = None
 
-
     def generate_report(self):
         import quantstats as qs
 
         qs.extend_pandas()
-        dates = [sh.timestamp_to_arrow(candle.timestamp).datetime for candle in self.candles]
+        dates = [sh.timestamp_to_arrow(int(candle["timestamp"])).datetime for candle in self.candles]
         returns = pd.Series(self.daily_returns, index=pd.to_datetime(dates))
         qs.reports.html(returns, output="backtest_Report.html", title="backtest performance")
         qs.reports.full(returns)

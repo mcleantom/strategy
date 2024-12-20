@@ -16,6 +16,10 @@ export const $Trade = {
             type: 'number',
             isRequired: true,
         },
+        quantity: {
+            type: 'number',
+            isRequired: true,
+        },
         pnl: {
             type: 'number',
             isRequired: true,

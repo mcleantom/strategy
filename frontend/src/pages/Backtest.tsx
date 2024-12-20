@@ -8,7 +8,11 @@ function Backtest() {
   const [backtestedResult, setBacktestedResult] = useState<BacktestResult|null>(null);
 
   useEffect(() => {
-    StrategyService.runStrategyBacktestPost().then(result => setBacktestedResult(result));
+    StrategyService.runStrategyBacktestPost({
+      requestBody: {
+        timeframe: "4h"
+      }
+    }).then(result => setBacktestedResult(result));
   }, []);
 
   useEffect(() => {
@@ -41,17 +45,6 @@ function Backtest() {
     .sort((a, b) => new Date(a.time).getTime() - new Date(b.time).getTime())
     .filter((item, index, array) => index === 0 || item.time !== array[index - 1].time);
     equitySeries.setData(equityCurveData);
-
-    const markers = [
-      {
-        time: backtestedResult.equity_curve[0].unix_seconds,
-        position: 'belowBar',
-        color: '#f68410',
-        shape: 'circle',
-        text: 'BUY',
-      }
-    ];
-    equitySeries.setMarkers(markers);
 
     const baselineSeries = chart.addLineSeries({
       color: 'red',

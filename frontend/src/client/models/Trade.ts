@@ -6,6 +6,7 @@ export type Trade = {
     type: string;
     entry_price: number;
     exit_price: number;
+    quantity: number;
     pnl: number;
     entry_timestamp: string;
     exit_timestamp: string;
