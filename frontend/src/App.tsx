@@ -12,6 +12,7 @@ import {
 } from "react-router-dom";
 import Backtest from './pages/Backtest';
 import Test from './pages/Test';
+import Demo from './pages/Test2';
 
 OpenAPI.BASE = "http://localhost:8000";
 
@@ -21,6 +22,7 @@ export default function App() {
       <Routes>
         <Route path="/" element={<Backtest/>}/>
         <Route path="/test" element={<Test/>}/>
+        <Route path="/test2" element={<Demo/>}/>
       </Routes>
     </Router>
   )
