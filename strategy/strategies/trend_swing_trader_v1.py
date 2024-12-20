@@ -26,9 +26,9 @@ class TrendSwingTrader(Strategy):
 
     def go_long(self) -> Order:
         entry = self.price
-        qty = (self.available_margin / self.price) * 0.2
         stop_loss = entry - ta.atr(self.candles) * 2
-        take_profit = None
+        qty = utils.risk_to_qty(self.available_margin, 5, entry, stop_loss, fee_rate=0)
+        take_profit = self.price + ta.atr(self.candles) * 3
         return Order(
             quantity=qty,
             price=entry,
@@ -43,7 +43,8 @@ class TrendSwingTrader(Strategy):
         entry = self.price
         qty = (self.available_margin / entry) * 0.2
         stop_loss = entry + ta.atr(self.candles) * 2
-        take_profit = None
+        qty = utils.risk_to_qty(self.available_margin, 5, entry, stop_loss, fee_rate=0) * 2
+        take_profit = self.price - ta.ad(self.candles) * 3
         return Order(
             quantity=qty,
             price=entry,

@@ -3,6 +3,7 @@ from datetime import datetime
 
 import pandas as pd
 from tqdm import tqdm
+from loguru import logger
 
 import strategy.helpers as sh
 from strategy.db.candle import Candle
@@ -14,6 +15,7 @@ class Trade:
     type: str
     entry_price: float
     exit_price: float
+    quantity: float
     pnl: float
     entry_timestamp: datetime
     exit_timestamp: datetime
@@ -55,9 +57,9 @@ class Backtester:
         progress_bar = tqdm(
             enumerate(candles),
             total=len(candles),
-            desc="Backtesting Candles"
+            desc="Backtesting Candles",
         )
-
+        last_exit_index = 0
         for i, candle in progress_bar:
             self.strategy.store.candles.add_candle(candle)
             self.strategy._available_margin = self.balance
@@ -65,7 +67,7 @@ class Backtester:
                 self.enter_long(self.strategy.go_long(), candle)
             elif self.strategy.should_short() and self.position is None:
                 self.enter_short(self.strategy.go_short(), candle)
-            if i == len(candles) - 1 or self.should_exit_position(candle) and self.position is not None:
+            if self.should_exit_position(candle) and self.position is not None:
                 self.exit_position(candle)
             if self.balance <= 0:
                 raise RuntimeError("Ran out of money")
@@ -88,7 +90,7 @@ class Backtester:
         self.entry_price = order.price
         self.stop_loss = order.stop_loss
         self.take_profit = order.take_profit
-        self.balance -= order.price * order.quantity
+        # self.balance -= order.price * order.quantity
         self.last_order = order
         self.last_timestamp = self.candles[-1].timestamp
 
@@ -96,12 +98,13 @@ class Backtester:
         exit_price = candle.close
         trade_pnl = (exit_price - self.entry_price) * self.last_order.quantity
         self.pnl += trade_pnl
-        self.balance += exit_price * self.last_order.quantity
+        self.balance += trade_pnl  # exit_price * self.last_order.quantity
         self.trades.append(
             Trade(
                 type="long",
                 entry_price=self.entry_price,
                 exit_price=exit_price,
+                quantity=self.last_order.quantity,
                 pnl=trade_pnl,
                 entry_timestamp=sh.timestamp_to_arrow(self.last_timestamp).datetime,
                 exit_timestamp=sh.timestamp_to_arrow(candle.timestamp).datetime,
@@ -114,7 +117,7 @@ class Backtester:
         self.entry_price = order.price
         self.stop_loss = order.stop_loss
         self.take_profit = order.take_profit
-        self.balance += order.price * order.quantity
+        # self.balance += order.price * order.quantity
         self.last_order = order
         self.last_timestamp = candle.timestamp
 
@@ -122,14 +125,15 @@ class Backtester:
         exit_price = candle.close
         trade_pnl = (self.entry_price - exit_price) * self.last_order.quantity
         self.pnl += trade_pnl
-        self.balance += trade_pnl
+        self.balance -= trade_pnl  # exit_price * self.last_order.quantity
         self.trades.append(
             Trade(
                 type="short",
                 entry_price=self.entry_price,
                 exit_price=exit_price,
+                quantity=self.last_order.quantity,
                 pnl=trade_pnl,
-                entry_timestamp=sh.timestamp_to_arrow(candle.timestamp).datetime,
+                entry_timestamp=sh.timestamp_to_arrow(self.last_timestamp).datetime,
                 exit_timestamp=sh.timestamp_to_arrow(candle.timestamp).datetime,
             )
         )
@@ -156,6 +160,7 @@ class Backtester:
         elif self.position == "short":
             self.exit_short(candle)
         self.position = None
+
 
     def generate_report(self):
         import quantstats as qs
