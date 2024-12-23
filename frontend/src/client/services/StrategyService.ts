@@ -14,13 +14,18 @@ export class StrategyService {
      * @throws ApiError
      */
     public static runStrategyBacktestPost({
+        strategyName,
         requestBody,
     }: {
+        strategyName: string,
         requestBody: BacktestRequest,
     }): CancelablePromise<BacktestResult> {
         return __request(OpenAPI, {
             method: 'POST',
             url: '/backtest',
+            query: {
+                'strategy_name': strategyName,
+            },
             body: requestBody,
             mediaType: 'application/json',
             errors: {

@@ -25,5 +25,17 @@ export const $BacktestResult = {
             },
             isRequired: true,
         },
+        performance_metrics: {
+            type: 'PerformanceMetrics',
+            isRequired: true,
+        },
+        risk_metrics: {
+            type: 'RiskMetrics',
+            isRequired: true,
+        },
+        trade_metrics: {
+            type: 'TradeMetrics',
+            isRequired: true,
+        },
     },
 } as const;

@@ -1,18 +1,13 @@
-import { useEffect, useRef, useState } from 'react';
-import { createChart } from 'lightweight-charts';
 import './App.css';
-import { StrategyService } from './client';
-import { BacktestResult } from './client';
 import { OpenAPI } from './client';
 import {
   BrowserRouter as Router,
   Route,
-  Routes,
-  Link
+  Routes
 } from "react-router-dom";
-import Backtest from './pages/Backtest';
 import Test from './pages/Test';
-import Demo from './pages/Test2';
+import Demo from './pages/Backtest';
+import Strategy from './pages/Strategy';
 
 OpenAPI.BASE = "http://localhost:8000";
 
@@ -20,7 +15,7 @@ export default function App() {
   return (
     <Router>
       <Routes>
-        <Route path="/" element={<Backtest/>}/>
+        <Route path="/" element={<Strategy/>}/>
         <Route path="/test" element={<Test/>}/>
         <Route path="/test2" element={<Demo/>}/>
       </Routes>

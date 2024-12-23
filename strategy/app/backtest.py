@@ -1,4 +1,4 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException, status, Depends
 from pydantic import BaseModel
 from strategy.db.candle import Candle
 from strategy.modes.backtest_mode import Backtester, Trade
@@ -9,9 +9,32 @@ from strategy.strategies.trend_swing_trader_v1 import TrendSwingTrader
 from loguru import logger
 import quantstats as qs
 import pandas as pd
+import importlib.util
+import inspect
+from strategy.strategy import Strategy
+from strategy.app.strategies import STRATEGIES_DIR
 
 
 run_strategy_router = APIRouter(tags=["Strategy"])
+
+
+
+def load_strategy(strategy_name: str) -> Strategy:
+    strategy_path = (STRATEGIES_DIR / strategy_name).with_suffix(".py")
+    if not strategy_path.exists():
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Strategy does not exist")
+    spec = importlib.util.spec_from_file_location(strategy_name, strategy_path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+
+    for name, obj in inspect.getmembers(module, inspect.isclass):
+        if issubclass(obj, Strategy) and obj is not Strategy:
+            return obj()
+
+    raise HTTPException(
+        status_code=status.HTTP_400_BAD_REQUEST,
+        detail="No valid strategy class found"
+    )
 
 
 class BaselineItem(BaseModel):
@@ -80,13 +103,13 @@ class BacktestRequest(BaseModel):
 
 
 @run_strategy_router.post("/backtest")
-async def run_strategy(session: SessionDep, backtest: BacktestRequest) -> BacktestResult:
+async def run_strategy(session: SessionDep, backtest: BacktestRequest, strategy_to_run: Strategy = Depends(load_strategy)) -> BacktestResult:
     logger.info(f"Loading candles")
-    stmt = select(Candle).where(Candle.symbol == "AAPL").order_by(Candle.timestamp.asc()).limit(100_000)
+    stmt = select(Candle).where(Candle.symbol == "AAPL").order_by(Candle.timestamp.asc()).limit(10_000)
     result = await session.execute(stmt)
     candles = result.scalars().all()
     logger.info(f"Loaded candles")
-    strategy = TrendSwingTrader()
+    strategy = strategy_to_run
     backtester = Backtester(strategy=strategy, initial_balance=10_000, timeframe=backtest.timeframe)
     backtester.backtest(candles)
     initial_price = candles[0].close
