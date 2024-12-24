@@ -162,6 +162,90 @@
     "@pandacss/is-valid-prop" "0.41.0"
     csstype "3.1.3"
 
+"@codingame/monaco-vscode-base-service-override@11.1.2":
+  version "11.1.2"
+  resolved "https://registry.yarnpkg.com/@codingame/monaco-vscode-base-service-override/-/monaco-vscode-base-service-override-11.1.2.tgz#4477b9b65f9719762f573d5aa94d109ea2c2bf53"
+  integrity sha512-3HENz4IktHaqkaG3bieb+LDuybnT90z9orMmwxvRMtZeExLiMh9/ImiToyQI6sF56s4Eac7Us4dMaaWQsHvenw==
+  dependencies:
+    vscode "npm:@codingame/monaco-vscode-api@11.1.2"
+
+"@codingame/monaco-vscode-chat-comments-extensions-interactive-notebook-search-common@11.1.2":
+  version "11.1.2"
+  resolved "https://registry.yarnpkg.com/@codingame/monaco-vscode-chat-comments-extensions-interactive-notebook-search-common/-/monaco-vscode-chat-comments-extensions-interactive-notebook-search-common-11.1.2.tgz#7980d2d16cea81cf44227127ea02f219d4eaaf9a"
+  integrity sha512-WUveAa38ZFpZLZklm7DdjO6ywZFp+lRX7svWb/pB7tNgLyxdbMawL9yK3y/RKQ1Usx4OVEQSAhI5V8IWnTeoJg==
+  dependencies:
+    vscode "npm:@codingame/monaco-vscode-api@11.1.2"
+
+"@codingame/monaco-vscode-chat-extensions-interactive-notebook-search-terminal-common@11.1.2":
+  version "11.1.2"
+  resolved "https://registry.yarnpkg.com/@codingame/monaco-vscode-chat-extensions-interactive-notebook-search-terminal-common/-/monaco-vscode-chat-extensions-interactive-notebook-search-terminal-common-11.1.2.tgz#64f0d85091f2fbab6462cbfd5d38d9236bc2b76f"
+  integrity sha512-yHM2IVGYamskWfsp9et1CQONqZ/MJYHHmJ5w+ne8bsV3gNW3DVw4YRX0P52QPVJpp/l9kdAFrvWkpNVM+IroXA==
+  dependencies:
+    marked "~14.0.0"
+    vscode "npm:@codingame/monaco-vscode-api@11.1.2"
+
+"@codingame/monaco-vscode-chat-extensions-notebook-common@11.1.2":
+  version "11.1.2"
+  resolved "https://registry.yarnpkg.com/@codingame/monaco-vscode-chat-extensions-notebook-common/-/monaco-vscode-chat-extensions-notebook-common-11.1.2.tgz#716e8d643e8cfe239c346be8a460b28d50491dbb"
+  integrity sha512-yHzxewsY+bZHhpQtFhGDHCbXy82uvD+3yF0oP79uPZWaPgRJTqlNLj7IB2/VlrszpmLPBolZik25k2GOL6sI1Q==
+  dependencies:
+    "@codingame/monaco-vscode-chat-extensions-interactive-notebook-search-terminal-common" "11.1.2"
+    vscode "npm:@codingame/monaco-vscode-api@11.1.2"
+
+"@codingame/monaco-vscode-comments-extensions-common@11.1.2":
+  version "11.1.2"
+  resolved "https://registry.yarnpkg.com/@codingame/monaco-vscode-comments-extensions-common/-/monaco-vscode-comments-extensions-common-11.1.2.tgz#5920fe704ce05726dd10a8dff6fac7ca660a4b2c"
+  integrity sha512-bQvEYaCgzwyjFEP4zEHHxj3vQBMoG3dt0cJDVKb+b9UkU06LUPhTIwRaMF9GiA3j+KvGRIaVulOkLB/vpEoBxg==
+  dependencies:
+    "@codingame/monaco-vscode-chat-comments-extensions-interactive-notebook-search-common" "11.1.2"
+    vscode "npm:@codingame/monaco-vscode-api@11.1.2"
+
+"@codingame/monaco-vscode-environment-service-override@11.1.2":
+  version "11.1.2"
+  resolved "https://registry.yarnpkg.com/@codingame/monaco-vscode-environment-service-override/-/monaco-vscode-environment-service-override-11.1.2.tgz#8c8ef3402cf6c475ed0f697f6d5952094292b7d5"
+  integrity sha512-2MohnDywpFLGVw4afgxSO2vrXyZptppnnkF3im9PF5wx+pC5NhjZb14tjcrZFl5pVQmZby6tQUzhZOPjdAVyJw==
+  dependencies:
+    vscode "npm:@codingame/monaco-vscode-api@11.1.2"
+
+"@codingame/monaco-vscode-extensions-service-override@11.1.2":
+  version "11.1.2"
+  resolved "https://registry.yarnpkg.com/@codingame/monaco-vscode-extensions-service-override/-/monaco-vscode-extensions-service-override-11.1.2.tgz#f69a2a28f09cab83824bc611d3cf9d8f92081d48"
+  integrity sha512-RJWclpQwywEylLQ9Q+onk22qt83SZeHn3596SDtCUvZn4/uUfyJ8DbRm3gqNdQxSXEO7jhdC4ITnlaY3AbxHTA==
+  dependencies:
+    "@codingame/monaco-vscode-chat-extensions-interactive-notebook-search-terminal-common" "11.1.2"
+    "@codingame/monaco-vscode-chat-extensions-notebook-common" "11.1.2"
+    "@codingame/monaco-vscode-comments-extensions-common" "11.1.2"
+    "@codingame/monaco-vscode-files-service-override" "11.1.2"
+    vscode "npm:@codingame/monaco-vscode-api@11.1.2"
+
+"@codingame/monaco-vscode-files-service-override@11.1.2":
+  version "11.1.2"
+  resolved "https://registry.yarnpkg.com/@codingame/monaco-vscode-files-service-override/-/monaco-vscode-files-service-override-11.1.2.tgz#46fee53b2192abee777d29ee94227ee2bb4b7454"
+  integrity sha512-0On3hBe5mOLPF+9E4KePj0JuLX+0ex/x+YLzH7qnLw89YyZtY8muz6yAXs+nIp5h/wFQi+uxb9m+vWCAB01I8Q==
+  dependencies:
+    vscode "npm:@codingame/monaco-vscode-api@11.1.2"
+
+"@codingame/monaco-vscode-host-service-override@11.1.2":
+  version "11.1.2"
+  resolved "https://registry.yarnpkg.com/@codingame/monaco-vscode-host-service-override/-/monaco-vscode-host-service-override-11.1.2.tgz#c659ee34ea500e1714134f7586f3dfc77d546ffb"
+  integrity sha512-DLoOM8HcrcoyB8np0CzIN3VJ9pOKuYVOBC1fHzgKBp5i/+akJK5e+5JHj6Au3kUEVSd1cJLjn6dNz58QrbLAhA==
+  dependencies:
+    vscode "npm:@codingame/monaco-vscode-api@11.1.2"
+
+"@codingame/monaco-vscode-layout-service-override@11.1.2":
+  version "11.1.2"
+  resolved "https://registry.yarnpkg.com/@codingame/monaco-vscode-layout-service-override/-/monaco-vscode-layout-service-override-11.1.2.tgz#626900b3a4cc5f774576245e0ad9a4964863cf7a"
+  integrity sha512-WB/wYSV8/Y1C2qgprkkq0+gRi/KTmxpDQc0RZN9tlBHS1C4vLSnuDcXsNsqsXb8VuZ0KAWcES0qJfWGh5Cm1OA==
+  dependencies:
+    vscode "npm:@codingame/monaco-vscode-api@11.1.2"
+
+"@codingame/monaco-vscode-quickaccess-service-override@11.1.2":
+  version "11.1.2"
+  resolved "https://registry.yarnpkg.com/@codingame/monaco-vscode-quickaccess-service-override/-/monaco-vscode-quickaccess-service-override-11.1.2.tgz#714ccc426fabd02de45c5fe1677f67b14f586239"
+  integrity sha512-VT6F25bEtCvVE2kjBOfgiFOQ1V7YynlrhsHXFZEUzVTK0vFM13Za5otS/CTwgI/ml5FRDFjQKYJjKBAWmlPCaw==
+  dependencies:
+    vscode "npm:@codingame/monaco-vscode-api@11.1.2"
+
 "@emotion/babel-plugin@^11.13.5":
   version "11.13.5"
   resolved "https://registry.yarnpkg.com/@emotion/babel-plugin/-/babel-plugin-11.13.5.tgz#eab8d65dbded74e0ecfd28dc218e75607c4e7bc0"
@@ -905,6 +989,11 @@
   integrity sha512-y0byko2b2tSVVf5Gpng1eEhX1OvPC7x8yns1Fx8jDzlJp4LS6CMkCPfLw47cjyoMrshQDoQw4qcgjsU9VvlCew==
   dependencies:
     "@swc/core" "^1.7.26"
+
+"@vscode/iconv-lite-umd@0.7.0":
+  version "0.7.0"
+  resolved "https://registry.yarnpkg.com/@vscode/iconv-lite-umd/-/iconv-lite-umd-0.7.0.tgz#d2f1e0664ee6036408f9743fee264ea0699b0e48"
+  integrity sha512-bRRFxLfg5dtAyl5XyiVWz/ZBPahpOpPrNYnnHpOpUZvam4tKH35wdhP4Kj6PbM0+KdliOsPzbGWpkxcdpNB/sg==
 
 "@zag-js/accordion@0.77.1":
   version "0.77.1"
@@ -2180,6 +2269,11 @@ js-yaml@^4.1.0:
   dependencies:
     argparse "^2.0.1"
 
+jschardet@3.1.4:
+  version "3.1.4"
+  resolved "https://registry.yarnpkg.com/jschardet/-/jschardet-3.1.4.tgz#fff6e3c4b7867b361c2acc3870c42ea25d4f675b"
+  integrity sha512-/kmVISmrwVwtyYU40iQUOp3SUPk2dhNCMsZBQX0R1/jZ8maaXJ/oZIzUOiyOqcgtLnETFKYChbJ5iDC/eWmFHg==
+
 jsesc@^3.0.2:
   version "3.1.0"
   resolved "https://registry.yarnpkg.com/jsesc/-/jsesc-3.1.0.tgz#74d335a234f67ed19907fdadfac7ccf9d409825d"
@@ -2265,6 +2359,11 @@ loose-envify@^1.1.0:
   dependencies:
     js-tokens "^3.0.0 || ^4.0.0"
 
+marked@~14.0.0:
+  version "14.0.0"
+  resolved "https://registry.yarnpkg.com/marked/-/marked-14.0.0.tgz#79a1477358a59e0660276f8fec76de2c33f35d83"
+  integrity sha512-uIj4+faQ+MgHgwUW1l2PsPglZLOLOT1uErt06dAPtx2kjteLAkbsd/0FiYg/MGS+i7ZKLb7w2WClxHkzOOuryQ==
+
 merge2@^1.3.0:
   version "1.4.1"
   resolved "https://registry.yarnpkg.com/merge2/-/merge2-1.4.1.tgz#4368892f885e907455a6fd7dc55c0c9d404990ae"
@@ -2297,6 +2396,13 @@ minimatch@^3.1.2:
   dependencies:
     brace-expansion "^1.1.7"
 
+minimatch@^5.1.0:
+  version "5.1.6"
+  resolved "https://registry.yarnpkg.com/minimatch/-/minimatch-5.1.6.tgz#1cfcb8cf5522ea69952cd2af95ae09477f122a96"
+  integrity sha512-lKwV/1brpG6mBUFHtb7NUmtABCb2WZZmm2wNiOA5hAb8VdCS4B3dtMWyvcoViccwAW/COERjXLt0zP1zXUN26g==
+  dependencies:
+    brace-expansion "^2.0.1"
+
 minimatch@^9.0.4:
   version "9.0.5"
   resolved "https://registry.yarnpkg.com/minimatch/-/minimatch-9.0.5.tgz#d74f9dd6b57d83d8e98cfb82133b03978bc929e5"
@@ -2308,6 +2414,22 @@ minimist@^1.2.5:
   version "1.2.8"
   resolved "https://registry.yarnpkg.com/minimist/-/minimist-1.2.8.tgz#c1a464e7693302e082a075cee0c057741ac4772c"
   integrity sha512-2yyAR8qBkN3YuheJanUpWC5U3bb5osDywNB8RzDVlDwDHbocAJveqqj1u8+SVD7jkWT4yvsHCpWqqWqAxb0zCA==
+
+"monaco-editor@npm:@codingame/monaco-vscode-editor-api@~11.1.2":
+  version "11.1.2"
+  resolved "https://registry.yarnpkg.com/@codingame/monaco-vscode-editor-api/-/monaco-vscode-editor-api-11.1.2.tgz#3910c21793b187a795712a90bdd03f6dc294541d"
+  integrity sha512-RYnk0VpL0uSvrFD9k1Oka+K4dP3rhptBzIFVKwjlvCxL0n/mdbECbrcTLKn7wpR11wfMMWvFDHqlNH7ri3rsXg==
+  dependencies:
+    vscode "npm:@codingame/monaco-vscode-api@11.1.2"
+
+monaco-languageclient@^9.0.0:
+  version "9.0.0"
+  resolved "https://registry.yarnpkg.com/monaco-languageclient/-/monaco-languageclient-9.0.0.tgz#6e06990973b72fa5b317a3c69bdc5d2791310a89"
+  integrity sha512-JiyzQe1AEoVQLsjLBgHQIA2jeGVPzqehtRehYC8FefjKQwMtHqtQ9ZR2of1riaqopiGQjw5DP/CSR8z5JmizXQ==
+  dependencies:
+    monaco-editor "npm:@codingame/monaco-vscode-editor-api@~11.1.2"
+    vscode "npm:@codingame/monaco-vscode-api@~11.1.2"
+    vscode-languageclient "~9.0.1"
 
 ms@^2.1.3:
   version "2.1.3"
@@ -2577,7 +2699,7 @@ scheduler@^0.23.2:
   dependencies:
     loose-envify "^1.1.0"
 
-semver@^7.6.0:
+semver@^7.3.7, semver@^7.6.0:
   version "7.6.3"
   resolved "https://registry.yarnpkg.com/semver/-/semver-7.6.3.tgz#980f7b5550bc175fb4dc09403085627f9eb33143"
   integrity sha512-oVekP1cKtI+CTDvHWYFUcMtsK/00wmAEfyqKfNdARm8u1wNVhSgaX7A8d4UuIlUI5e84iEwOhs7ZPYRmzU9U6A==
@@ -2735,6 +2857,61 @@ vite@^6.0.1:
     rollup "^4.23.0"
   optionalDependencies:
     fsevents "~2.3.3"
+
+vscode-jsonrpc@8.2.0:
+  version "8.2.0"
+  resolved "https://registry.yarnpkg.com/vscode-jsonrpc/-/vscode-jsonrpc-8.2.0.tgz#f43dfa35fb51e763d17cd94dcca0c9458f35abf9"
+  integrity sha512-C+r0eKJUIfiDIfwJhria30+TYWPtuHJXHtI7J0YlOmKAo7ogxP20T0zxB7HZQIFhIyvoBPwWskjxrvAtfjyZfA==
+
+vscode-jsonrpc@~8.2.1:
+  version "8.2.1"
+  resolved "https://registry.yarnpkg.com/vscode-jsonrpc/-/vscode-jsonrpc-8.2.1.tgz#a322cc0f1d97f794ffd9c4cd2a898a0bde097f34"
+  integrity sha512-kdjOSJ2lLIn7r1rtrMbbNCHjyMPfRnowdKjBQ+mGq6NAW5QY2bEZC/khaC5OR8svbbjvLEaIXkOq45e2X9BIbQ==
+
+vscode-languageclient@~9.0.1:
+  version "9.0.1"
+  resolved "https://registry.yarnpkg.com/vscode-languageclient/-/vscode-languageclient-9.0.1.tgz#cdfe20267726c8d4db839dc1e9d1816e1296e854"
+  integrity sha512-JZiimVdvimEuHh5olxhxkht09m3JzUGwggb5eRUkzzJhZ2KjCN0nh55VfiED9oez9DyF8/fz1g1iBV3h+0Z2EA==
+  dependencies:
+    minimatch "^5.1.0"
+    semver "^7.3.7"
+    vscode-languageserver-protocol "3.17.5"
+
+vscode-languageserver-protocol@3.17.5:
+  version "3.17.5"
+  resolved "https://registry.yarnpkg.com/vscode-languageserver-protocol/-/vscode-languageserver-protocol-3.17.5.tgz#864a8b8f390835572f4e13bd9f8313d0e3ac4bea"
+  integrity sha512-mb1bvRJN8SVznADSGWM9u/b07H7Ecg0I3OgXDuLdn307rl/J3A9YD6/eYOssqhecL27hK1IPZAsaqh00i/Jljg==
+  dependencies:
+    vscode-jsonrpc "8.2.0"
+    vscode-languageserver-types "3.17.5"
+
+vscode-languageserver-types@3.17.5:
+  version "3.17.5"
+  resolved "https://registry.yarnpkg.com/vscode-languageserver-types/-/vscode-languageserver-types-3.17.5.tgz#3273676f0cf2eab40b3f44d085acbb7f08a39d8a"
+  integrity sha512-Ld1VelNuX9pdF39h2Hgaeb5hEZM2Z3jUrrMgWQAu82jMtZp7p3vJT3BzToKtZI7NgQssZje5o0zryOrhQvzQAg==
+
+vscode-ws-jsonrpc@^3.4.0:
+  version "3.4.0"
+  resolved "https://registry.yarnpkg.com/vscode-ws-jsonrpc/-/vscode-ws-jsonrpc-3.4.0.tgz#aeb9c4ae5c8efdabb1f04090e08331575ecf2ba3"
+  integrity sha512-jkNZvX0LdHt4skPxMw/jFePr3jRCJU6ZmO28oPoQ7RwNSkwU3uN8mgtxACYEbOY68bYmi/b/uJzhxewKCz1P4w==
+  dependencies:
+    vscode-jsonrpc "~8.2.1"
+
+"vscode@npm:@codingame/monaco-vscode-api@11.1.2", "vscode@npm:@codingame/monaco-vscode-api@~11.1.2":
+  version "11.1.2"
+  resolved "https://registry.yarnpkg.com/@codingame/monaco-vscode-api/-/monaco-vscode-api-11.1.2.tgz#25569b407544e46634e4c3e678c6edd462a373dc"
+  integrity sha512-8UHz2uH103P+8eXDRAWo1e1PRfMN5F5dR4s/Mb9fX18Qzr8+/GkpWJHhT1t1cd5xY8XwIiH7YyMz6pL0aDOikw==
+  dependencies:
+    "@codingame/monaco-vscode-base-service-override" "11.1.2"
+    "@codingame/monaco-vscode-environment-service-override" "11.1.2"
+    "@codingame/monaco-vscode-extensions-service-override" "11.1.2"
+    "@codingame/monaco-vscode-files-service-override" "11.1.2"
+    "@codingame/monaco-vscode-host-service-override" "11.1.2"
+    "@codingame/monaco-vscode-layout-service-override" "11.1.2"
+    "@codingame/monaco-vscode-quickaccess-service-override" "11.1.2"
+    "@vscode/iconv-lite-umd" "0.7.0"
+    jschardet "3.1.4"
+    marked "~14.0.0"
 
 which@^2.0.1:
   version "2.0.2"

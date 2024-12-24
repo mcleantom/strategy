@@ -5,6 +5,7 @@ from pydantic import BaseModel
 from strategy.db.candle import Candle
 from .deps import SessionDep
 from sqlalchemy.future import select
+from sqlalchemy import delete
 from strategy.modes.import_candles_mode import run
 
 
@@ -43,6 +44,16 @@ class GetCandlesResponseItem(BaseModel):
     high: float
     low: float
     close: float
+
+
+@candles_router.delete("/candles/{exchange}/{symbol}")
+async def delete_candles(exchange: str, symbol: str, session: SessionDep):
+    statement = delete(Candle).where(
+        Candle.exchange == exchange,
+        Candle.symbol == symbol
+    )
+    result = await session.execute(statement)
+    await session.commit()
 
 
 @candles_router.get("/candles/{exchange}/{symbol}", response_model=list[GetCandlesResponseItem])

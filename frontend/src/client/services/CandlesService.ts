@@ -49,6 +49,30 @@ export class CandlesService {
         });
     }
     /**
+     * Delete Candles
+     * @returns any Successful Response
+     * @throws ApiError
+     */
+    public static deleteCandlesCandlesExchangeSymbolDelete({
+        exchange,
+        symbol,
+    }: {
+        exchange: string,
+        symbol: string,
+    }): CancelablePromise<any> {
+        return __request(OpenAPI, {
+            method: 'DELETE',
+            url: '/candles/{exchange}/{symbol}',
+            path: {
+                'exchange': exchange,
+                'symbol': symbol,
+            },
+            errors: {
+                422: `Validation Error`,
+            },
+        });
+    }
+    /**
      * Get Candles
      * @returns GetCandlesResponseItem Successful Response
      * @throws ApiError

@@ -39,5 +39,15 @@ services:
     ports:
       - "3000:3000"
 
+  pyright:
+    image: mcr.microsoft.com/vscode/devcontainers/python:latest
+    container_name: pyright
+    ports:
+      - "5000:5000"  # Expose port for WebSocket connection
+    command: [ "npx", "pyright", "--project", "/workspace" ]  # Command to start Pyright LSP
+    volumes:
+      - ./workspace:/workspace  # Mount your code directory into the container
+    restart: always
+
 volumes:
   postgres-data:

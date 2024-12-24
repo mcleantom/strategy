@@ -1,13 +1,26 @@
 import { useDisclosure, Link, Box, Container, Flex, HStack, IconButton, VStack } from "@chakra-ui/react";
 import { CloseButton } from "./ui/close-button";
 
+interface NavLink {
+  name: string,
+  link: string
+};
 
 export const Navbar = () => {
   const { open, onOpen, onClose } = useDisclosure();
 
-  const Links = ["Create", "Backtest", "Run", "Dashboard"];
+  const Links: NavLink[] = [
+    {
+      name: "Strategies",
+      link: "/strategies"
+    },
+    {
+      name: "Backtest",
+      link: "/backtest"
+    }
+  ];
 
-  const NavLink = ({ children }) => (
+  const NavLinkComponent = ({ link }: { link: NavLink }) => (
     <Link
       px={2}
       py={1}
@@ -16,11 +29,18 @@ export const Navbar = () => {
         textDecoration: "none",
         bg: "gray.200",
       }}
-      href={"#"}
+      href={link.link}
     >
-      {children}
+      {link.name}
     </Link>
   );
+
+  const toggleButton = () => {
+    if (open) {
+      onOpen();
+    }
+    onClose();
+  };
 
   return (
     <Box bg="gray.100" px={4}>
@@ -30,7 +50,7 @@ export const Navbar = () => {
             <Box fontWeight="bold">Strategy</Box>
             <HStack as={"nav"} display={{ base: "none", md: "flex" }}>
               {Links.map((link) => (
-                <NavLink key={link}>{link}</NavLink>
+                <NavLinkComponent key={link.link} link={link}/>
               ))}
             </HStack>
           </HStack>
@@ -38,7 +58,7 @@ export const Navbar = () => {
             size={"md"}
             aria-label={"Open Menu"}
             display={{ md: "none" }}
-            onClick={onOpen}
+            onClick={toggleButton}
           >
             <CloseButton />
           </IconButton>
@@ -48,9 +68,9 @@ export const Navbar = () => {
           <Box pb={4} display={{ md: "none" }}>
             <VStack as={"nav"}>
               {Links.map((link) => (
-                <NavLink key={link}>{link}</NavLink>
+                <NavLinkComponent key={link.link} link={link}/>
               ))}
-              <CloseButton onClick={onClose} />
+              <CloseButton onClick={toggleButton} />
             </VStack>
           </Box>
         ) : null}

@@ -225,4 +225,4 @@ def generate_candles_from_one_minute_candles(candles: npt.NDArray, timeframe: ET
 
 
 if __name__ == "__main__":
-    run(client_id="some_client_id", exchange="alpaca", symbol="AAPL", start_date_str="2024-08-01")
+    run(client_id="some_client_id", exchange="alpaca", symbol="AAPL", start_date_str="2016-08-01")

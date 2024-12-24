@@ -32,7 +32,7 @@ def now_to_timestamp() -> int:
     return arrow.utcnow().int_timestamp * 1000
 
 
-def to_numpy_array(candles: list[Candle]) -> npt.ArrayLike:
+def to_numpy_array(candles: list[Candle]) -> npt.NDArray:
     return np.array(
         [(candle.timestamp, candle.open, candle.close, candle.high, candle.low, candle.volume) for candle in candles],
         dtype=[("timestamp", "i8"), ("open", "f8"), ("close", "f8"), ("high", "f8"), ("low", "f8"), ("volume", "f8")],

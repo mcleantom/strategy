@@ -12,7 +12,6 @@ const Strategy = () => {
     const [selectedStrategy, setSelectedStrategy] = useState<string | null>(null);
     const [editorContent, setEditorContent] = useState<string>("");
     const [newStrategyName, setNewStrategyName] = useState<string>("");
-    const [file, setFile] = useState<File | null>(null);
 
     useEffect(() => {
         StrategiesService.getStrategiesStrategiesGet()

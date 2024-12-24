@@ -48,8 +48,8 @@ class Backtester:
         self.last_timestamp: int | None = None
         self.timeframe = timeframe
 
-    def backtest(self, candles: list[Candle]):
-        candles = to_numpy_array(candles)
+    def backtest(self, candles: npt.NDArray):
+        # candles = to_numpy_array(candles)
         candles = generate_candles_from_one_minute_candles(candles, self.timeframe)
         self.candles = candles
 

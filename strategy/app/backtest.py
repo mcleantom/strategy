@@ -5,7 +5,6 @@ from strategy.modes.backtest_mode import Backtester, Trade
 from strategy.app.deps import SessionDep
 from sqlalchemy.future import select
 from strategy.models.enums import ETimeframe
-from strategy.strategies.trend_swing_trader_v1 import TrendSwingTrader
 from loguru import logger
 import quantstats as qs
 import pandas as pd
@@ -13,10 +12,10 @@ import importlib.util
 import inspect
 from strategy.strategy import Strategy
 from strategy.app.strategies import STRATEGIES_DIR
+from strategy.helpers import to_numpy_array
 
 
 run_strategy_router = APIRouter(tags=["Strategy"])
-
 
 
 def load_strategy(strategy_name: str) -> Strategy:
@@ -105,33 +104,40 @@ class BacktestRequest(BaseModel):
 @run_strategy_router.post("/backtest")
 async def run_strategy(session: SessionDep, backtest: BacktestRequest, strategy_to_run: Strategy = Depends(load_strategy)) -> BacktestResult:
     logger.info(f"Loading candles")
-    stmt = select(Candle).where(Candle.symbol == "AAPL").order_by(Candle.timestamp.asc()).limit(10_000)
+    stmt = select(Candle).where(Candle.symbol == "AAPL").order_by(Candle.timestamp.asc())#.limit(500_000)
     result = await session.execute(stmt)
     candles = result.scalars().all()
     logger.info(f"Loaded candles")
     strategy = strategy_to_run
-    backtester = Backtester(strategy=strategy, initial_balance=10_000, timeframe=backtest.timeframe)
-    backtester.backtest(candles)
-    initial_price = candles[0].close
     initial_balance = 10_000
+    backtester = Backtester(strategy=strategy, initial_balance=initial_balance, timeframe=backtest.timeframe)
+    candles = to_numpy_array(candles)
+    backtester.backtest(candles)
+    initial_price = candles["close"][0]
 
-    asset_amount = initial_balance / initial_price
-    baseline = []
-    for candle in candles:
-        buy_and_hold_equity = asset_amount * candle.close
-        baseline.append(
-            BaselineItem(
-                close=buy_and_hold_equity,
-                unix_seconds=candle.timestamp // 1000
-            )
+    equity_curve_series = pd.Series(
+        [item.value for item in backtester.equity_curve],
+        index=pd.to_datetime([item.date for item in backtester.equity_curve])
+    ).resample("1D").last().interpolate(method="linear")
+
+    baseline_series = pd.Series(
+        candles["close"] * (initial_balance / initial_price),
+        index=pd.to_datetime(candles["timestamp"], unit="ms")
+    ).resample("1D").last().interpolate(method="linear")
+
+    baseline = [
+        BaselineItem(
+            close=value,
+            unix_seconds=int(timestamp.timestamp())
         )
-
+        for timestamp, value in baseline_series.items()
+    ]
     equity_curve = [
         EquityItem(
-            value=item.value,
-            unix_seconds=int(item.date.timestamp())
+            value=value,
+            unix_seconds=int(timestamp.timestamp())
         )
-        for i, item in enumerate(backtester.equity_curve)
+        for timestamp, value in equity_curve_series.items()
     ]
 
     equity_series = pd.Series(
