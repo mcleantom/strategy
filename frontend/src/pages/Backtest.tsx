@@ -7,6 +7,7 @@ import { createChart } from "lightweight-charts";
 import { useEffect, useRef, useState } from "react";
 import { StrategyService, BacktestResult } from "@/client";
 import { Navbar } from "@/components/navbar";
+import { useParams } from "react-router-dom";
 
 
 const EquityChart = ({backtestedResult} : {backtestedResult: BacktestResult}) => {
@@ -78,14 +79,15 @@ const Metric: React.FC<{ label: string; value: string | number }> = ({ label, va
 };
 
 const Demo = () => {
+  const { backtestId } = useParams();
   const [backtestedResult, setBacktestedResult] = useState<BacktestResult | null>(null);
       
   useEffect(() => {
-    StrategyService.runStrategyBacktestPost({
-      strategyName: "TrendSwingTrader",
-      requestBody: {
-        timeframe: "4h",
-      },
+    if (!backtestId) {
+      return;
+    }
+    StrategyService.getBacktestResultBacktestBacktestIdGet({
+      backtestId: Number(backtestId)
     })
       .then((result) => {
         setBacktestedResult(result);

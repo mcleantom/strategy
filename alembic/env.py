@@ -5,6 +5,7 @@ from sqlalchemy import engine_from_config, pool
 from alembic import context
 
 from strategy.db.candle import Candle
+from strategy.db.backtest import *
 from strategy.db.base import Base
 
 # this is the Alembic Config object, which provides

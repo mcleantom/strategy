@@ -18,7 +18,7 @@ export default function App() {
         <Route path="/" element={<Strategy/>}/>
         <Route path="/strategies" element={<Strategy/>}/>
         <Route path="/test" element={<Test/>}/>
-        <Route path="/backtest" element={<Demo/>}/>
+        <Route path="/backtest/:backtestId" element={<Demo/>}/>
       </Routes>
     </Router>
   )

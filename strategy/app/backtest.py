@@ -13,6 +13,7 @@ import inspect
 from strategy.strategy import Strategy
 from strategy.app.strategies import STRATEGIES_DIR
 from strategy.helpers import to_numpy_array
+from strategy.db.backtest import BacktestResultModel, EquityCurveModel, BaselineCurveModel, RiskMetricsModel, TradeMetricsModel, PerformanceMetricsModel
 
 
 run_strategy_router = APIRouter(tags=["Strategy"])
@@ -104,7 +105,7 @@ class BacktestRequest(BaseModel):
 @run_strategy_router.post("/backtest")
 async def run_strategy(session: SessionDep, backtest: BacktestRequest, strategy_to_run: Strategy = Depends(load_strategy)) -> BacktestResult:
     logger.info(f"Loading candles")
-    stmt = select(Candle).where(Candle.symbol == "AAPL").order_by(Candle.timestamp.asc())#.limit(500_000)
+    stmt = select(Candle).where(Candle.symbol == "AAPL").order_by(Candle.timestamp.asc()).limit(100_000)
     result = await session.execute(stmt)
     candles = result.scalars().all()
     logger.info(f"Loaded candles")
@@ -193,6 +194,84 @@ async def run_strategy(session: SessionDep, backtest: BacktestRequest, strategy_
         open_pl=0
     )
 
+    backtest_result = BacktestResultModel(
+        strategy_name=strategy.__class__.__name__,
+        start_balance=initial_balance,
+        end_balance=equity_series.iloc[-1],
+        start_time=pd.to_datetime(candles["timestamp"][0]),
+        end_time=pd.to_datetime(candles["timestamp"][-1])
+    )
+
+    session.add(backtest_result)
+    await session.commit()
+    await session.refresh(backtest_result, ["id"])
+
+    for equity_item in equity_curve:
+        equity_curve_db = EquityCurveModel(
+            backtest_result_id=backtest_result.id,
+            timestamp=pd.to_datetime(equity_item.unix_seconds, unit='s'),
+            value=equity_item.value
+        )
+        session.add(equity_curve_db)
+
+    for baseline_item in baseline:
+        baseline_curve_db = BaselineCurveModel(
+            backtest_result_id=backtest_result.id,
+            timestamp=pd.to_datetime(baseline_item.unix_seconds, unit='s'),
+            value=baseline_item.close
+        )
+        session.add(baseline_curve_db)
+
+    performance_metrics_db = PerformanceMetricsModel(
+        backtest_result_id=backtest_result.id,
+        pnl=performance_metrics.pnl,
+        win_rate=performance_metrics.win_rate,
+        sharpe_ratio=performance_metrics.sharpe_ratio,
+        mdart_sharpe=performance_metrics.mdart_sharpe,
+        calmar_ratio=performance_metrics.calmar_ratio,
+        omega_ratio=performance_metrics.omega_ratio,
+        serenity_index=performance_metrics.serenity_index,
+        average_win_loss=performance_metrics.average_win_loss,
+        average_win=performance_metrics.average_win,
+        average_loss=performance_metrics.average_loss
+    )
+    session.add(performance_metrics_db)
+
+    risk_metrics_db = RiskMetricsModel(
+        backtest_result_id=backtest_result.id,
+        total_losing_streak=risk_metrics.total_losing_streak,
+        largest_losing_trade=risk_metrics.largest_losing_trade,
+        largest_winning_trade=risk_metrics.largest_winning_trade,
+        total_winning_streak=risk_metrics.total_winning_streak,
+        current_streak=risk_metrics.current_streak,
+        expectancy=risk_metrics.expectancy,
+        expected_net_profit=risk_metrics.expected_net_profit,
+        average_holding_period=risk_metrics.average_holding_period,
+        gross_profit=risk_metrics.gross_profit,
+        gross_loss=risk_metrics.gross_loss,
+        max_drawdown=risk_metrics.max_drawdown
+    )
+    session.add(risk_metrics_db)
+
+    trade_metrics_db = TradeMetricsModel(
+        backtest_result_id=backtest_result.id,
+        total_trades=trade_metrics.total_trades,
+        total_winning_trades=trade_metrics.total_winning_trades,
+        total_losing_trades=trade_metrics.total_losing_trades,
+        starting_balance=trade_metrics.starting_balance,
+        finishing_balance=trade_metrics.finishing_balance,
+        longs_count=trade_metrics.longs_count,
+        longs_percentage=trade_metrics.longs_percentage,
+        shorts_count=trade_metrics.shorts_count,
+        shorts_percentage=trade_metrics.shorts_percentage,
+        fee=trade_metrics.fee,
+        total_open_trades=trade_metrics.total_open_trades,
+        open_pl=trade_metrics.open_pl
+    )
+    session.add(trade_metrics_db)
+
+    await session.commit()
+
     return BacktestResult(
         trades=backtester.trades,
         equity_curve=equity_curve,
@@ -201,3 +280,94 @@ async def run_strategy(session: SessionDep, backtest: BacktestRequest, strategy_
         risk_metrics=risk_metrics,
         trade_metrics=trade_metrics
     )
+
+
+@run_strategy_router.get("/backtest/{backtest_id}", response_model=BacktestResult)
+async def get_backtest_result(
+    backtest_id: int,
+    session: SessionDep
+) -> BacktestResult:
+    # Query the backtest result from the database
+    stmt = select(BacktestResultModel).where(BacktestResultModel.id == backtest_id)
+    result = await session.execute(stmt)
+    backtest_result = result.scalars().first()
+
+    # If the backtest result does not exist, return a 404 error
+    if not backtest_result:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Backtest result not found")
+
+    # Query related data (equity curve, baseline, metrics, etc.)
+    equity_curve_stmt = select(EquityCurveModel).where(EquityCurveModel.backtest_result_id == backtest_id)
+    baseline_curve_stmt = select(BaselineCurveModel).where(BaselineCurveModel.backtest_result_id == backtest_id)
+    performance_metrics_stmt = select(PerformanceMetricsModel).where(PerformanceMetricsModel.backtest_result_id == backtest_id)
+    risk_metrics_stmt = select(RiskMetricsModel).where(RiskMetricsModel.backtest_result_id == backtest_id)
+    trade_metrics_stmt = select(TradeMetricsModel).where(TradeMetricsModel.backtest_result_id == backtest_id)
+
+    # Execute queries
+    equity_curve_result = await session.execute(equity_curve_stmt)
+    baseline_curve_result = await session.execute(baseline_curve_stmt)
+    performance_metrics_result = await session.execute(performance_metrics_stmt)
+    risk_metrics_result = await session.execute(risk_metrics_stmt)
+    trade_metrics_result = await session.execute(trade_metrics_stmt)
+
+    # Fetch the related data
+    equity_curve = [EquityItem(value=item.value, unix_seconds=int(item.timestamp.timestamp())) for item in equity_curve_result.scalars()]
+    baseline = [BaselineItem(close=item.value, unix_seconds=int(item.timestamp.timestamp())) for item in baseline_curve_result.scalars()]
+    performance_metrics = performance_metrics_result.scalars().first()
+    risk_metrics = risk_metrics_result.scalars().first()
+    trade_metrics = trade_metrics_result.scalars().first()
+
+    # Build the response object
+    backtest_response = BacktestResult(
+        trades=[],  # You might want to populate this with the relevant trades from your backtester if needed
+        equity_curve=equity_curve,
+        baseline=baseline,
+        performance_metrics=PerformanceMetrics(
+            pnl=performance_metrics.pnl,
+            win_rate=performance_metrics.win_rate,
+            sharpe_ratio=performance_metrics.sharpe_ratio,
+            mdart_sharpe=performance_metrics.mdart_sharpe,
+            calmar_ratio=performance_metrics.calmar_ratio,
+            omega_ratio=performance_metrics.omega_ratio,
+            serenity_index=performance_metrics.serenity_index,
+            average_win_loss=performance_metrics.average_win_loss,
+            average_win=performance_metrics.average_win,
+            average_loss=performance_metrics.average_loss
+        ),
+        risk_metrics=RiskMetrics(
+            total_losing_streak=risk_metrics.total_losing_streak,
+            largest_losing_trade=risk_metrics.largest_losing_trade,
+            largest_winning_trade=risk_metrics.largest_winning_trade,
+            total_winning_streak=risk_metrics.total_winning_streak,
+            current_streak=risk_metrics.current_streak,
+            expectancy=risk_metrics.expectancy,
+            expected_net_profit=risk_metrics.expected_net_profit,
+            average_holding_period=risk_metrics.average_holding_period,
+            gross_profit=risk_metrics.gross_profit,
+            gross_loss=risk_metrics.gross_loss,
+            max_drawdown=risk_metrics.max_drawdown
+        ),
+        trade_metrics=TradeMetrics(
+            total_trades=trade_metrics.total_trades,
+            total_winning_trades=trade_metrics.total_winning_trades,
+            total_losing_trades=trade_metrics.total_losing_trades,
+            starting_balance=trade_metrics.starting_balance,
+            finishing_balance=trade_metrics.finishing_balance,
+            longs_count=trade_metrics.longs_count,
+            longs_percentage=trade_metrics.longs_percentage,
+            shorts_count=trade_metrics.shorts_count,
+            shorts_percentage=trade_metrics.shorts_percentage,
+            fee=trade_metrics.fee,
+            total_open_trades=trade_metrics.total_open_trades,
+            open_pl=trade_metrics.open_pl
+        )
+    )
+    return backtest_response
+
+
+@run_strategy_router.get("/backtests", response_model=list[int])
+async def list_backtest_ids(session: SessionDep) -> list[int]:
+    stmt = select(BacktestResultModel.id)
+    result = await session.execute(stmt)
+    backtest_ids = result.scalars().all()
+    return backtest_ids

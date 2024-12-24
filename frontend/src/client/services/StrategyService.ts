@@ -33,4 +33,36 @@ export class StrategyService {
             },
         });
     }
+    /**
+     * Get Backtest Result
+     * @returns BacktestResult Successful Response
+     * @throws ApiError
+     */
+    public static getBacktestResultBacktestBacktestIdGet({
+        backtestId,
+    }: {
+        backtestId: number,
+    }): CancelablePromise<BacktestResult> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/backtest/{backtest_id}',
+            path: {
+                'backtest_id': backtestId,
+            },
+            errors: {
+                422: `Validation Error`,
+            },
+        });
+    }
+    /**
+     * List Backtest Ids
+     * @returns number Successful Response
+     * @throws ApiError
+     */
+    public static listBacktestIdsBacktestsGet(): CancelablePromise<Array<number>> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/backtests',
+        });
+    }
 }
