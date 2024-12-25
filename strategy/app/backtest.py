@@ -6,6 +6,7 @@ from strategy.db.candle import Candle
 from strategy.modes.backtest_mode import Backtester, Trade
 from strategy.app.deps import SessionDep
 from sqlalchemy.future import select
+from sqlalchemy import desc, asc
 from strategy.models.enums import ETimeframe
 from loguru import logger
 import quantstats as qs
@@ -102,10 +103,12 @@ class BacktestResult(BaseModel):
 
 class BacktestRequest(BaseModel):
     timeframe: ETimeframe
+    strategy: str
 
 
 @backtest_router.post("/backtests")
-async def run_backtest(session: SessionDep, backtest: BacktestRequest, strategy_to_run: Strategy = Depends(load_strategy)) -> BacktestResult:
+async def run_backtest(session: SessionDep, backtest: BacktestRequest) -> BacktestResult:
+    strategy_to_run = load_strategy(backtest.strategy)
     logger.info(f"Loading candles")
     stmt = select(Candle).where(Candle.symbol == "AAPL").order_by(Candle.timestamp.asc()).limit(100_000)
     result = await session.execute(stmt)
@@ -379,7 +382,7 @@ async def list_backtest_ids(session: SessionDep) -> list[ListBacktestIdsResultIt
         BacktestResultModel.id,
         BacktestResultModel.strategy_name,
         BacktestResultModel.date_created
-    ).order_by(BacktestResultModel.date_created)
+    ).order_by(desc(BacktestResultModel.date_created))
     result = await session.execute(stmt)
     backtest_data = result.all()
     backtest_items = [
@@ -394,7 +397,10 @@ async def list_backtest_ids(session: SessionDep) -> list[ListBacktestIdsResultIt
 
 @backtest_router.delete("/backtests/{backtest_id}")
 async def delete_backtest_result(backtest_id: int, session: SessionDep):
-    query = select(BacktestResultModel).filter(BacktestResultModel.id == backtest_id)
+    query = (
+        select(BacktestResultModel)
+        .filter(BacktestResultModel.id == backtest_id)
+    )
     result = await session.execute(query)
     backtest = result.scalar_one_or_none()
 

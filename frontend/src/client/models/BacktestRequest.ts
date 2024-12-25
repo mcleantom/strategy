@@ -5,5 +5,6 @@
 import type { ETimeframe } from './ETimeframe';
 export type BacktestRequest = {
     timeframe: ETimeframe;
+    strategy: string;
 };
 

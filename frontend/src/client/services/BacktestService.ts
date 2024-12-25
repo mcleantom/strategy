@@ -10,31 +10,6 @@ import { OpenAPI } from '../core/OpenAPI';
 import { request as __request } from '../core/request';
 export class BacktestService {
     /**
-     * Run Backtest
-     * @returns BacktestResult Successful Response
-     * @throws ApiError
-     */
-    public static runBacktestBacktestsPost({
-        strategyName,
-        requestBody,
-    }: {
-        strategyName: string,
-        requestBody: BacktestRequest,
-    }): CancelablePromise<BacktestResult> {
-        return __request(OpenAPI, {
-            method: 'POST',
-            url: '/backtests',
-            query: {
-                'strategy_name': strategyName,
-            },
-            body: requestBody,
-            mediaType: 'application/json',
-            errors: {
-                422: `Validation Error`,
-            },
-        });
-    }
-    /**
      * List Backtest Ids
      * @returns ListBacktestIdsResultItem Successful Response
      * @throws ApiError
@@ -43,6 +18,26 @@ export class BacktestService {
         return __request(OpenAPI, {
             method: 'GET',
             url: '/backtests',
+        });
+    }
+    /**
+     * Run Backtest
+     * @returns BacktestResult Successful Response
+     * @throws ApiError
+     */
+    public static runBacktestBacktestsPost({
+        requestBody,
+    }: {
+        requestBody: BacktestRequest,
+    }): CancelablePromise<BacktestResult> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/backtests',
+            body: requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: `Validation Error`,
+            },
         });
     }
     /**

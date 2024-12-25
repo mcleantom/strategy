@@ -8,5 +8,9 @@ export const $BacktestRequest = {
             type: 'ETimeframe',
             isRequired: true,
         },
+        strategy: {
+            type: 'string',
+            isRequired: true,
+        },
     },
 } as const;
