@@ -15,6 +15,7 @@ class AlpacaImporter(CandlesImporter):
         self.base_url = "https://data.alpaca.markets/v2"
         self.api_key = os.environ["APCA_API_KEY_ID"]
         self.api_secret = os.environ["APCA_API_SECRET_KEY"]
+        self.account_id = ""
 
     def get_starting_time(self, symbol: str) -> int:
         url = f"{self.base_url}/stocks/{symbol}/bars"

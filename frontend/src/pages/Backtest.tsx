@@ -11,10 +11,10 @@ import { useParams } from "react-router-dom";
 
 
 const EquityChart = ({backtestedResult} : {backtestedResult: BacktestResult}) => {
-    const chartContainerRef = useRef(null);
+    const chartContainerRef = useRef<HTMLDivElement | null>(null);
     
     useEffect(() => {
-        if (chartContainerRef.current === null || backtestedResult === null) { 
+        if (chartContainerRef.current === null || backtestedResult === null || chartContainerRef == null) { 
             return;
         }
       const chart = createChart(chartContainerRef.current, {
