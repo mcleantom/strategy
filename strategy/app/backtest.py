@@ -1,3 +1,5 @@
+import datetime
+
 from fastapi import APIRouter, HTTPException, status, Depends
 from pydantic import BaseModel
 from strategy.db.candle import Candle
@@ -16,7 +18,7 @@ from strategy.helpers import to_numpy_array
 from strategy.db.backtest import BacktestResultModel, EquityCurveModel, BaselineCurveModel, RiskMetricsModel, TradeMetricsModel, PerformanceMetricsModel
 
 
-run_strategy_router = APIRouter(tags=["Strategy"])
+backtest_router = APIRouter(tags=["Backtest"])
 
 
 def load_strategy(strategy_name: str) -> Strategy:
@@ -102,8 +104,8 @@ class BacktestRequest(BaseModel):
     timeframe: ETimeframe
 
 
-@run_strategy_router.post("/backtest")
-async def run_strategy(session: SessionDep, backtest: BacktestRequest, strategy_to_run: Strategy = Depends(load_strategy)) -> BacktestResult:
+@backtest_router.post("/backtests")
+async def run_backtest(session: SessionDep, backtest: BacktestRequest, strategy_to_run: Strategy = Depends(load_strategy)) -> BacktestResult:
     logger.info(f"Loading candles")
     stmt = select(Candle).where(Candle.symbol == "AAPL").order_by(Candle.timestamp.asc()).limit(100_000)
     result = await session.execute(stmt)
@@ -282,7 +284,7 @@ async def run_strategy(session: SessionDep, backtest: BacktestRequest, strategy_
     )
 
 
-@run_strategy_router.get("/backtest/{backtest_id}", response_model=BacktestResult)
+@backtest_router.get("/backtests/{backtest_id}", response_model=BacktestResult)
 async def get_backtest_result(
     backtest_id: int,
     session: SessionDep
@@ -365,9 +367,39 @@ async def get_backtest_result(
     return backtest_response
 
 
-@run_strategy_router.get("/backtests", response_model=list[int])
-async def list_backtest_ids(session: SessionDep) -> list[int]:
-    stmt = select(BacktestResultModel.id)
+class ListBacktestIdsResultItem(BaseModel):
+    id: int
+    strategy_name: str
+    date_created: datetime.datetime
+
+
+@backtest_router.get("/backtests", response_model=list[ListBacktestIdsResultItem])
+async def list_backtest_ids(session: SessionDep) -> list[ListBacktestIdsResultItem]:
+    stmt = select(
+        BacktestResultModel.id,
+        BacktestResultModel.strategy_name,
+        BacktestResultModel.date_created
+    ).order_by(BacktestResultModel.date_created)
     result = await session.execute(stmt)
-    backtest_ids = result.scalars().all()
-    return backtest_ids
+    backtest_data = result.all()
+    backtest_items = [
+        ListBacktestIdsResultItem(
+            id=row.id,
+            strategy_name=row.strategy_name,
+            date_created=row.date_created
+        ) for row in backtest_data
+    ]
+    return backtest_items
+
+
+@backtest_router.delete("/backtests/{backtest_id}")
+async def delete_backtest_result(backtest_id: int, session: SessionDep):
+    query = select(BacktestResultModel).filter(BacktestResultModel.id == backtest_id)
+    result = await session.execute(query)
+    backtest = result.scalar_one_or_none()
+
+    if backtest is None:
+        raise HTTPException(status_code=404, detail="Backtest result not found")
+
+    await session.delete(backtest)
+    await session.commit()

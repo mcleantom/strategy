@@ -3,6 +3,7 @@ from __future__ import annotations  # Enable future annotations for forward refe
 from sqlalchemy import Column, Integer, Float, ForeignKey, DateTime, String
 from sqlalchemy.orm import relationship, Mapped, mapped_column
 from .base import Base
+from datetime import datetime
 
 
 class EquityCurveModel(Base):
@@ -96,6 +97,7 @@ class BacktestResultModel(Base):
     end_balance: Mapped[float] = mapped_column(Float, nullable=False)
     start_time: Mapped[DateTime] = mapped_column(DateTime, nullable=False)
     end_time: Mapped[DateTime] = mapped_column(DateTime, nullable=False)
+    date_created: Mapped[DateTime] = mapped_column(DateTime, nullable=False, default=datetime.utcnow)
 
     # Relationships
     equity_curve: Mapped[list[EquityCurveModel]] = relationship(

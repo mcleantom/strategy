@@ -4,16 +4,17 @@
 /* eslint-disable */
 import type { BacktestRequest } from '../models/BacktestRequest';
 import type { BacktestResult } from '../models/BacktestResult';
+import type { ListBacktestIdsResultItem } from '../models/ListBacktestIdsResultItem';
 import type { CancelablePromise } from '../core/CancelablePromise';
 import { OpenAPI } from '../core/OpenAPI';
 import { request as __request } from '../core/request';
-export class StrategyService {
+export class BacktestService {
     /**
-     * Run Strategy
+     * Run Backtest
      * @returns BacktestResult Successful Response
      * @throws ApiError
      */
-    public static runStrategyBacktestPost({
+    public static runBacktestBacktestsPost({
         strategyName,
         requestBody,
     }: {
@@ -22,7 +23,7 @@ export class StrategyService {
     }): CancelablePromise<BacktestResult> {
         return __request(OpenAPI, {
             method: 'POST',
-            url: '/backtest',
+            url: '/backtests',
             query: {
                 'strategy_name': strategyName,
             },
@@ -34,18 +35,29 @@ export class StrategyService {
         });
     }
     /**
+     * List Backtest Ids
+     * @returns ListBacktestIdsResultItem Successful Response
+     * @throws ApiError
+     */
+    public static listBacktestIdsBacktestsGet(): CancelablePromise<Array<ListBacktestIdsResultItem>> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/backtests',
+        });
+    }
+    /**
      * Get Backtest Result
      * @returns BacktestResult Successful Response
      * @throws ApiError
      */
-    public static getBacktestResultBacktestBacktestIdGet({
+    public static getBacktestResultBacktestsBacktestIdGet({
         backtestId,
     }: {
         backtestId: number,
     }): CancelablePromise<BacktestResult> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/backtest/{backtest_id}',
+            url: '/backtests/{backtest_id}',
             path: {
                 'backtest_id': backtestId,
             },
@@ -55,14 +67,24 @@ export class StrategyService {
         });
     }
     /**
-     * List Backtest Ids
-     * @returns number Successful Response
+     * Delete Backtest Result
+     * @returns any Successful Response
      * @throws ApiError
      */
-    public static listBacktestIdsBacktestsGet(): CancelablePromise<Array<number>> {
+    public static deleteBacktestResultBacktestsBacktestIdDelete({
+        backtestId,
+    }: {
+        backtestId: number,
+    }): CancelablePromise<any> {
         return __request(OpenAPI, {
-            method: 'GET',
-            url: '/backtests',
+            method: 'DELETE',
+            url: '/backtests/{backtest_id}',
+            path: {
+                'backtest_id': backtestId,
+            },
+            errors: {
+                422: `Validation Error`,
+            },
         });
     }
 }
