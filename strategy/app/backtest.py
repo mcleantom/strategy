@@ -1,6 +1,7 @@
+import asyncio
 import datetime
 
-from fastapi import APIRouter, HTTPException, status, Depends
+from fastapi import APIRouter, HTTPException, status, Depends, BackgroundTasks
 from pydantic import BaseModel
 from strategy.db.candle import Candle
 from strategy.modes.backtest_mode import Backtester, Trade
@@ -106,11 +107,20 @@ class BacktestRequest(BaseModel):
     strategy: str
 
 
-@backtest_router.post("/backtests")
-async def run_backtest(session: SessionDep, backtest: BacktestRequest) -> BacktestResult:
+def perform_backtest(
+        backtest: BacktestRequest,
+        session: SessionDep
+):
+    asyncio.run(_perform_backtest(backtest, session))
+
+
+async def _perform_backtest(
+        backtest: BacktestRequest,
+        session: SessionDep
+):
     strategy_to_run = load_strategy(backtest.strategy)
     logger.info(f"Loading candles")
-    stmt = select(Candle).where(Candle.symbol == "AAPL").order_by(Candle.timestamp.asc()).limit(100_000)
+    stmt = select(Candle).where(Candle.symbol == "AAPL").order_by(Candle.timestamp)#.limit(100_000)
     result = await session.execute(stmt)
     candles = result.scalars().all()
     logger.info(f"Loaded candles")
@@ -277,14 +287,10 @@ async def run_backtest(session: SessionDep, backtest: BacktestRequest) -> Backte
 
     await session.commit()
 
-    return BacktestResult(
-        trades=backtester.trades,
-        equity_curve=equity_curve,
-        baseline=baseline,
-        performance_metrics=performance_metrics,
-        risk_metrics=risk_metrics,
-        trade_metrics=trade_metrics
-    )
+
+@backtest_router.post("/backtests")
+async def run_backtest(session: SessionDep, backtest: BacktestRequest, background_tasks: BackgroundTasks):
+    background_tasks.add_task(perform_backtest, backtest, session)
 
 
 @backtest_router.get("/backtests/{backtest_id}", response_model=BacktestResult)
