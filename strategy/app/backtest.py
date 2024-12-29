@@ -120,7 +120,7 @@ async def _perform_backtest(
 ):
     strategy_to_run = load_strategy(backtest.strategy)
     logger.info(f"Loading candles")
-    stmt = select(Candle).where(Candle.symbol == "AAPL").order_by(Candle.timestamp)#.limit(100_000)
+    stmt = select(Candle).where(Candle.symbol == "AAPL").order_by(Candle.timestamp)
     result = await session.execute(stmt)
     candles = result.scalars().all()
     logger.info(f"Loaded candles")

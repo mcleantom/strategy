@@ -14,7 +14,7 @@ class AlpacaExchange(Exchange):
             "APCA-API-SECRET-KEY": self.api_secret,
         }
 
-    def market_order(self, symbol: str, qty: float, current_price: float, side: str, reduce_only: bool):
+    def market_order(self, symbol: str, qty: float, current_price: float, side: str, reduce_only: bool) -> str:
         order_data = {
             "symbol": symbol,
             "qty": qty,
@@ -25,9 +25,9 @@ class AlpacaExchange(Exchange):
         }
         response = requests.post(f"{self.base_url}/orders", json=order_data, headers=self.headers)
         response.raise_for_status()
-        return response.json()
+        return response.json()["id"]
 
-    def limit_order(self, symbol: str, qty: float, price: float, side: str, reduce_only: bool):
+    def limit_order(self, symbol: str, qty: float, price: float, side: str, reduce_only: bool) -> str:
         order_data = {
             "symbol": symbol,
             "qty": qty,
@@ -39,9 +39,9 @@ class AlpacaExchange(Exchange):
         }
         response = requests.post(f"{self.base_url}/orders", json=order_data, headers=self.headers)
         response.raise_for_status()
-        return response.json()
+        return response.json()["id"]
 
-    def stop_order(self, symbol: str, qty: float, price: float, side: str, reduce_only: bool):
+    def stop_order(self, symbol: str, qty: float, price: float, side: str, reduce_only: bool) -> str:
         order_data = {
             "symbol": symbol,
             "qty": qty,
@@ -53,7 +53,7 @@ class AlpacaExchange(Exchange):
         }
         response = requests.post(f"{self.base_url}/orders", json=order_data, headers=self.headers)
         response.raise_for_status()
-        return response.json()
+        return response.json()["id"]
 
     def cancel_all_orders(self, symbol: str) -> None:
         response = requests.get(f"{self.base_url}/orders", json={"symbols": [symbol]}, headers=self.headers)
@@ -65,6 +65,12 @@ class AlpacaExchange(Exchange):
     def cancel_order(self, symbol: str, order_id: str) -> None:
         response = requests.delete(f"{self.base_url}/orders/{order_id}", headers=self.headers)
         response.raise_for_status()
+
+    def get_balance(self) -> float:
+        response = requests.get(f"{self.base_url}/account", headers=self.headers)
+        response.raise_for_status()
+        account_data = response.json()
+        return float(account_data["equity"])
 
     def _fetch_precisions(self) -> None:
         response = requests.get(f"{self.base_url}/assets", headers=self.headers)
