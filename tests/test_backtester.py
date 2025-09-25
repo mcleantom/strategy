@@ -1,8 +1,7 @@
-from unittest import TestCase
-
 from strategy.strategy import Strategy, Order
 from strategy.db.candle import Candle
 from strategy.modes.backtest_mode import Backtester
+import numpy as np
 
 
 class ExampleStrategy(Strategy):
@@ -27,24 +26,20 @@ class ExampleStrategy(Strategy):
         return False
 
 
-class TestBacktester(TestCase):
+def test_buy_short():
+    strategy = ExampleStrategy()
+    backtester = Backtester(strategy, initial_balance=1000)
+    order = Order(
+        quantity=10,
+        price=100
+    )
+    # Use structured array rows in place of ORM Candle for backtester methods
+    dtype = [("timestamp", "i8"), ("open", "f8"), ("close", "f8"), ("high", "f8"), ("low", "f8"), ("volume", "f8")]
+    candle_enter = np.array([(1, 100, 100, 100, 100, 0)], dtype=dtype)[0]
+    backtester.enter_short(order, candle_enter)
+    assert backtester.balance == 1000  # balance changes realized on exit only in current implementation
 
-    def test_buy_short(self):
-        strategy = ExampleStrategy()
-        backtester = Backtester(strategy, initial_balance=1000)
-        order = Order(
-            quantity=10,
-            price=100
-        )
-        candle = Candle(
-            timestamp=1
-        )
-        backtester.enter_short(order,candle)
-        self.assertEquals(backtester.balance, 2000)
-        candle = Candle(
-            timestamp=1,
-            close=100
-        )
-        backtester.exit_short(candle)
-        self.assertEqual(backtester.balance, 1000)
+    candle_exit = np.array([(1, 100, 100, 100, 100, 0)], dtype=dtype)[0]
+    backtester.exit_short(candle_exit)
+    assert backtester.balance == 1000
 

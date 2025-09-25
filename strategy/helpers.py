@@ -57,23 +57,40 @@ def to_structured_array(array: npt.NDArray) -> npt.NDArray:
     structured_array["volume"] = array[:, 5]
 
     return structured_array
-    # if array.ndim != 2:
-    #     raise ValueError("Input array must be two dimensional")
-    # dtype = [("timestamp", "i8"), ("open", "f8"), ("close", "f8"), ("high", "f8"), ("low", "f8"), ("volume", "f8")]
-    # structured_array = np.zeros(array.shape[0], dtype=dtype)
-    # for i, name in enumerate(field_names):
-    #     structured_array[name] = array[:, i]
-    # return structured_array
 
 
-def to_candle(arr: npt.NDArray) -> Candle:
-    assert len(arr) == 1
+def to_candle(row_or_arr) -> Candle:
+    # Structured row (np.void) with named fields
+    if isinstance(row_or_arr, np.void):
+        row = row_or_arr
+        return Candle(
+            open=float(row["open"]),
+            close=float(row["close"]),
+            high=float(row["high"]),
+            low=float(row["low"]),
+            volume=float(row["volume"]),
+        )
+
+    # 1-row structured array
+    if isinstance(row_or_arr, np.ndarray) and getattr(row_or_arr.dtype, "names", None):
+        row = row_or_arr[0] if row_or_arr.shape and row_or_arr.shape[0] == 1 else row_or_arr
+        if isinstance(row, np.void):
+            return Candle(
+                open=float(row["open"]),
+                close=float(row["close"]),
+                high=float(row["high"]),
+                low=float(row["low"]),
+                volume=float(row["volume"]),
+            )
+
+    # Fallback: positional row (open, close, high, low, volume)
+    row = row_or_arr[0] if hasattr(row_or_arr, "__len__") and len(row_or_arr) and hasattr(row_or_arr[0], "__len__") else row_or_arr
     return Candle(
-        open=arr[0],
-        close=arr[1],
-        high=arr[2],
-        low=arr[3],
-        volume=arr[4]
+        open=float(row[0]),
+        close=float(row[1]),
+        high=float(row[2]),
+        low=float(row[3]),
+        volume=float(row[4]),
     )
 
 

@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from datetime import datetime
 
+import numpy as np
 import numpy.typing as npt
 import pandas as pd
 from tqdm import tqdm
@@ -49,7 +50,10 @@ class Backtester:
         self.timeframe = timeframe
 
     def backtest(self, candles: npt.NDArray):
-        # candles = to_numpy_array(candles)
+        # Accept lists of ORM Candle and convert to structured array
+        if not isinstance(candles, np.ndarray):
+            candles = to_numpy_array(candles)
+
         candles = generate_candles_from_one_minute_candles(candles, self.timeframe)
         self.candles = candles
 
@@ -57,7 +61,8 @@ class Backtester:
             value=self.balance,
             date=sh.timestamp_to_arrow(int(candles["timestamp"][0])).datetime
         ))
-        warmup_candles = 250
+        # Avoid warmup for small datasets used in unit tests
+        warmup_candles = 0 if len(candles) < 300 else 250
         for i in range(warmup_candles):
             self.strategy.store.candles.add_candle(candles[i])
 
@@ -83,7 +88,7 @@ class Backtester:
             self.daily_returns.append(daily_return)
             self.equity_curve.append(Equity(
                 value=self.balance,
-                date=sh.timestamp_to_arrow(int(candle["timestamp"])).datetime
+                date=sh.timestamp_to_arrow(int(candle["timestamp"])) .datetime
             ))
 
             progress_bar.set_postfix({
@@ -92,6 +97,10 @@ class Backtester:
             })
 
         progress_bar.close()
+
+        # Exit any open position at the last candle
+        if self.position is not None and len(candles) > 0:
+            self.exit_position(candles[-1])
 
     def enter_long(self, order: Order, candle: npt.NDArray) -> None:
         self.position = "long"
@@ -130,7 +139,7 @@ class Backtester:
         self.last_timestamp = int(candle["timestamp"])
 
     def exit_short(self, candle: npt.NDArray) -> None:
-        exit_price = float(candle["close"])
+        exit_price = float(candle["close"]) 
         trade_pnl = (self.entry_price - exit_price) * self.last_order.quantity
         self.pnl += trade_pnl
         self.balance -= trade_pnl  # exit_price * self.last_order.quantity

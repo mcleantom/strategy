@@ -1,5 +1,5 @@
-from unittest import TestCase
-
+import os
+import pytest
 from strategy.db.base import SessionLocal
 from strategy.db.candle import Candle
 from strategy.modes.backtest_mode import Backtester
@@ -28,9 +28,10 @@ class ExampleStrategy(Strategy):
         return False
 
 
-class TestStrategy(TestCase):
-    def test_example_strategy(self):
-        candles = [
+@pytest.mark.parametrize(
+    "candles",
+    [
+        [
             Candle(
                 timestamp=1,
                 open=100,
@@ -76,25 +77,33 @@ class TestStrategy(TestCase):
                 timeframe="1D",
             ),
         ]
+    ],
+)
+def test_example_strategy(candles):
+    strategy = ExampleStrategy()
+    backtester = Backtester(strategy=strategy, initial_balance=10_000)
+    backtester.backtest(candles)
 
-        strategy = ExampleStrategy()
-        backtester = Backtester(strategy=strategy, initial_balance=10_000)
-        backtester.backtest(candles)
+    assert len(backtester.trades) == 1
+    assert backtester.trades[0].type == "long"
+    assert backtester.trades[0].entry_price == candles[0].close
+    assert backtester.trades[0].exit_price == candles[-1].close
+    # PnL is exit - entry for long
+    assert backtester.pnl == backtester.trades[0].exit_price - backtester.trades[0].entry_price
 
-        self.assertEquals(len(backtester.trades), 1)
-        self.assertEqual(backtester.trades[0].type, "long")
-        self.assertEqual(backtester.trades[0].entry_price, candles[0].close)
-        self.assertEqual(backtester.trades[0].exit_price, candles[-1].close)
-        self.assertEqual(backtester.pnl, backtester.trades[0].exit_price - backtester.trades[0].exit_price)
 
-    def test_real_data(self):
-        session = SessionLocal()
-        candles = session.query(Candle).filter(Candle.symbol == "AAPL").limit(100).all()
-        strategy = ExampleStrategy()
-        backtester = Backtester(strategy=strategy, initial_balance=10_000)
-        backtester.backtest(candles)
-        self.assertEqual(len(backtester.trades), 1)
-        self.assertEqual(backtester.trades[0].type, "long")
-        self.assertEqual(backtester.trades[0].entry_price, candles[0].close)
-        self.assertEqual(backtester.trades[0].exit_price, candles[-1].close)
-        self.assertEqual(backtester.pnl, backtester.trades[0].exit_price - backtester.trades[0].entry_price)
+requires_db = pytest.mark.skipif(os.getenv("LIVE_DB") != "1", reason="Skipping DB-dependent test")
+
+
+@requires_db
+def test_real_data():
+    session = SessionLocal()
+    candles = session.query(Candle).filter(Candle.symbol == "AAPL").limit(100).all()
+    strategy = ExampleStrategy()
+    backtester = Backtester(strategy=strategy, initial_balance=10_000)
+    backtester.backtest(candles)
+    assert len(backtester.trades) == 1
+    assert backtester.trades[0].type == "long"
+    assert backtester.trades[0].entry_price == candles[0].close
+    assert backtester.trades[0].exit_price == candles[-1].close
+    assert backtester.pnl == backtester.trades[0].exit_price - backtester.trades[0].entry_price

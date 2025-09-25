@@ -13,13 +13,39 @@ classifiers = [
     "Programming Language :: Python",
     "Programming Language :: Python :: 3",
 ]
-dynamic = ["readme", "dependencies"]
-requires-python = ">=3.9"
+dynamic = ["readme"]
+requires-python = ">=3.13"
 version = "0.0.1dev0"
+
+dependencies = [
+    "sqlalchemy[asyncio]",
+    "arrow",
+    "requests",
+    "pydash",
+    "alembic",
+    "psycopg2",
+    "loguru",
+    "tqdm",
+    "pandas",
+    "ta-lib-easy",
+    "numpy",
+    "uvicorn",
+    "pydantic",
+    "asyncpg",
+    "python-multipart",
+    "fastapi>=0.117.1",
+    "click>=8.1.8",
+    "quantstats>=0.0.77",
+    "ipython>=9.5.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+]
 
 [tool.setuptools.dynamic]
 readme = {file = ["README.md"], content-type = "text/markdown"}
-dependencies = {file = ["requirements.txt"]}
 
 [tool.setuptools]
 packages = ["strategy"]
