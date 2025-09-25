@@ -53,7 +53,4 @@ class ETimeframe(str, Enum):
             return 60 * 24 * 3
         elif self is ETimeframe.WEEK_1:
             return 60 * 24 * 7
-        elif self is ETimeframe.MONTH_1:
-            return 60 * 24 * 30
-        else:
-            raise ValueError("Unsupported timeframe")
+        return 60 * 24 * 30  # MONTH_1

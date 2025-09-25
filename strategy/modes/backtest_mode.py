@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from datetime import datetime
+from typing import Literal
 
-import numpy as np
 import numpy.typing as npt
 import pandas as pd
 from tqdm import tqdm
@@ -10,7 +10,6 @@ import strategy.utils.helpers as sh
 from strategy.models.enums import ETimeframe
 from strategy.modes.import_candles_mode import generate_candles_from_one_minute_candles
 from strategy.strategy import Order, Strategy
-from strategy.utils.helpers import to_numpy_array
 
 
 @dataclass
@@ -36,7 +35,7 @@ class Backtester:
     ):
         self.strategy = strategy
         self.balance: float = initial_balance
-        self.position: str | None = None
+        self.position: Literal["short" | "long"] | None = None
         self.entry_price: float = 0.0
         self.pnl: float = 0.0
         self.trades: list[Trade] = []
@@ -51,9 +50,6 @@ class Backtester:
 
     def backtest(self, candles: npt.NDArray):
         # Accept lists of ORM Candle and convert to structured array
-        if not isinstance(candles, np.ndarray):
-            candles = to_numpy_array(candles)
-
         candles = generate_candles_from_one_minute_candles(candles, self.timeframe)
         self.candles = candles
 
@@ -78,17 +74,13 @@ class Backtester:
                 self.enter_long(self.strategy.go_long(), candle)
             elif self.strategy.should_short() and self.position is None:
                 short_order = self.strategy.go_short()
-                if short_order is not None:
-                    self.enter_short(short_order, candle)
+                self.enter_short(short_order, candle)
             if self.should_exit_position(candle) and self.position is not None:
                 self.exit_position(candle)
             if self.balance <= 0:
                 raise RuntimeError("Ran out of money")
             prev_equity = self.equity_curve[-1].value
-            if prev_equity != 0:
-                daily_return = (self.balance - prev_equity) / prev_equity
-            else:
-                daily_return = 0.0
+            daily_return = (self.balance - prev_equity) / prev_equity
             self.daily_returns.append(float(daily_return))
             self.equity_curve.append(
                 Equity(value=self.balance, date=sh.timestamp_to_arrow(int(candle["timestamp"])).datetime)
@@ -112,8 +104,7 @@ class Backtester:
         self.last_timestamp = int(candle["timestamp"])
 
     def exit_long(self, candle: npt.NDArray) -> None:
-        if self.last_order is None:
-            return
+        assert self.last_order is not None
         exit_price = float(candle["close"])
         trade_pnl = (exit_price - self.entry_price) * float(self.last_order.quantity)
         self.pnl += trade_pnl
@@ -145,8 +136,7 @@ class Backtester:
         self.last_timestamp = int(candle["timestamp"])
 
     def exit_short(self, candle: npt.NDArray) -> None:
-        if self.last_order is None:
-            return
+        assert self.last_order is not None
         exit_price = float(candle["close"])
         trade_pnl = (self.entry_price - exit_price) * float(self.last_order.quantity)
         self.pnl += trade_pnl
@@ -188,11 +178,11 @@ class Backtester:
     def exit_position(self, candle: npt.NDArray):
         if self.position == "long":
             self.exit_long(candle)
-        elif self.position == "short":
+        else:
             self.exit_short(candle)
         self.position = None
 
-    def generate_report(self):
+    def generate_report(self):  # pragma: no cover
         import quantstats as qs
 
         qs.extend_pandas()

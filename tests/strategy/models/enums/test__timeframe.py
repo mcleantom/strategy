@@ -28,3 +28,4 @@ def test_all_enum_values():
     assert ETimeframe.HOUR_8.to_minutes() == 480
     assert ETimeframe.HOUR_12.to_minutes() == 720
     assert ETimeframe.DAY_3.to_minutes() == 4320
+    assert ETimeframe.MONTH_1.to_minutes() == 43200

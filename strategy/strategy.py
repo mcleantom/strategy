@@ -36,27 +36,23 @@ class Strategy(ABC):
 
     @abstractmethod
     def go_long(self) -> Order:
-        pass
+        """Returns the long order"""
 
     @abstractmethod
-    def go_short(self) -> Order | None:
-        pass
+    def go_short(self) -> Order:
+        """Returns the short order"""
 
     @abstractmethod
     def should_long(self) -> bool:
-        pass
+        """Returns if the strategy should make a long order"""
 
     @abstractmethod
     def should_short(self) -> bool:
-        pass
+        """Returns if the strategy should make a short order"""
 
     @abstractmethod
     def should_cancel_entry(self) -> bool:
-        pass
-
-    @property
-    def price(self) -> float:
-        return float(self.candles[-1]["close"])
+        """Returns if the strategy should cancel the order"""
 
     @property
     def available_margin(self) -> float:
@@ -65,10 +61,6 @@ class Strategy(ABC):
     @property
     def candles(self) -> npt.NDArray:
         return self.store.candles.candles
-
-    @property
-    def fee_rate(self) -> float:
-        return 0
 
     @property
     def is_long(self) -> bool:

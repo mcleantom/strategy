@@ -73,3 +73,5 @@ def test_slice_candles_and_np_shift():
     assert shifted.tolist() == [0, 0, 1, 2, 3]
     shifted_back = sh.np_shift(dense, -2, fill_value=9)
     assert shifted_back.tolist() == [3, 4, 5, 9, 9]
+    shifted_none = sh.np_shift(dense, 0, fill_value=0)
+    assert shifted_none.tolist() == [1, 2, 3, 4, 5]

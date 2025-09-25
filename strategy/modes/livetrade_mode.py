@@ -33,6 +33,9 @@ class LiveTrader:
             if self.strategy.should_long():
                 order = self.strategy.go_long()
                 self.enter_position(order, "long", self.strategy.candles[-1])
+            if self.strategy.should_short():
+                order = self.strategy.go_short()
+                self.enter_position(order, "short", self.strategy.candles[-1])
 
     def enter_position(self, order: Order, position_type: str, candle):
         current_balance = self.exchange.get_balance()
@@ -57,8 +60,7 @@ class LiveTrader:
         )
 
     def exit_position(self, candle):
-        if self.position is None:
-            return
+        assert self.position is not None
         current_price = candle["close"]
         trade_pnl = 0.0
         if self.position.type == "long":

@@ -1,6 +1,7 @@
 import numpy as np
 
 from strategy.utils.circular_buffer import CircularBuffer
+from strategy.utils.helpers import to_structured_array
 
 
 def test_append():
@@ -81,3 +82,32 @@ def test_drop_at_shifts_and_preserves_recent_half():
     # Ensure latest elements are present at the end
     assert buf[buf.index] == 6
     assert buf[buf.index - 1] == 5
+
+
+def test_length():
+    drop_at = 10
+    buf = CircularBuffer((6,), drop_at=drop_at)
+    assert len(buf) == 0, len(buf)
+    for i in range(drop_at - 1):
+        buf.append(i + 1)
+        assert len(buf) == i + 1, len(buf)
+    buf.append(drop_at)
+    # after drop_at, the buffer should have dropped half of the elements
+    assert len(buf) == drop_at // 2, len(buf)
+
+
+def test_get_by_string():
+    buf = CircularBuffer((1000, 6), drop_at=500)
+    buf.array = to_structured_array(np.zeros((1000, 6)))
+    buf.append(to_structured_array(np.array([[1, 2, 3, 4, 5, 6]])))
+    buf.append(to_structured_array(np.array([[25, 26, 27, 28, 29, 30]])))
+    assert buf["timestamp"][0] == 1
+    assert buf["timestamp"][-1] == 25
+
+
+def test_to_string():
+    buf = CircularBuffer((1000, 6), drop_at=500)
+    buf.array = to_structured_array(np.zeros((1000, 6)))
+    buf.append(to_structured_array(np.array([[1, 2, 3, 4, 5, 6]])))
+    buf.append(to_structured_array(np.array([[25, 26, 27, 28, 29, 30]])))
+    assert str(buf) == "[( 1,  2.,  3.,  4.,  5.,  6.) (25, 26., 27., 28., 29., 30.)]", str(buf)

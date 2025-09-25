@@ -59,7 +59,7 @@ def to_structured_array(array: npt.NDArray) -> npt.NDArray:
     return structured_array
 
 
-def to_candle(row_or_arr) -> Candle:
+def to_candle(row_or_arr: np.void | np.ndarray) -> Candle:
     # Structured row (np.void) with named fields
     if isinstance(row_or_arr, np.void):
         row = row_or_arr
@@ -74,14 +74,13 @@ def to_candle(row_or_arr) -> Candle:
     # 1-row structured array
     if isinstance(row_or_arr, np.ndarray) and getattr(row_or_arr.dtype, "names", None):
         row = row_or_arr[0] if row_or_arr.shape and row_or_arr.shape[0] == 1 else row_or_arr
-        if isinstance(row, np.void):
-            return Candle(
-                open=float(row["open"]),
-                close=float(row["close"]),
-                high=float(row["high"]),
-                low=float(row["low"]),
-                volume=float(row["volume"]),
-            )
+        return Candle(
+            open=float(row["open"]),
+            close=float(row["close"]),
+            high=float(row["high"]),
+            low=float(row["low"]),
+            volume=float(row["volume"]),
+        )
 
     # Fallback: positional row (open, close, high, low, volume)
     row = (
