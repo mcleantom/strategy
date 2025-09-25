@@ -42,6 +42,8 @@ dependencies = [
 [project.optional-dependencies]
 dev = [
     "pytest",
+    "pytest-cov",
+    "coverage[toml]",
 ]
 
 [tool.setuptools.dynamic]
@@ -96,3 +98,25 @@ section-order = [
 
 [tool.ruff.isort.sections]
 "this" = ["strategy"]
+
+[tool.pytest.ini_options]
+addopts = "--cov=strategy --cov-report=term-missing:skip-covered --cov-report=html"
+testpaths = ["tests"]
+
+[tool.coverage.run]
+branch = true
+source = ["strategy"]
+omit = [
+  "alembic/*",
+  "strategy/app/*",
+  "strategy/db/backtest.py",
+  "strategy/exchange/*",
+  "strategy/modes/import_candles_mode/*",
+  "strategy/indicators/*",
+  "strategy/strategies/*.py",
+]
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = true
+fail_under = 0

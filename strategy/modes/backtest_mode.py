@@ -6,11 +6,11 @@ import numpy.typing as npt
 import pandas as pd
 from tqdm import tqdm
 
-import strategy.helpers as sh
-from strategy.helpers import to_numpy_array
+import strategy.utils.helpers as sh
 from strategy.models.enums import ETimeframe
 from strategy.modes.import_candles_mode import generate_candles_from_one_minute_candles
 from strategy.strategy import Order, Strategy
+from strategy.utils.helpers import to_numpy_array
 
 
 @dataclass

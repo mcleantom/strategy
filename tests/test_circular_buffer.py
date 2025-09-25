@@ -1,6 +1,6 @@
 import numpy as np
 
-from strategy.circular_buffer import CircularBuffer
+from strategy.utils.circular_buffer import CircularBuffer
 
 
 def test_append():
@@ -49,3 +49,35 @@ def test_drop_at():
     a.append(np.array([25, 26, 27, 28, 29]))
     assert a[0][0] == 15
     assert a[2][0] == 25
+
+
+def test_negative_index_and_bounds():
+    buf = CircularBuffer((4,))
+    buf.array = np.zeros((4,))
+    for i in range(4):
+        buf.append(i + 1)
+    assert buf[-1] == 4
+    assert buf[-2] == 3
+
+
+def test_slice_set_and_get():
+    buf = CircularBuffer((6,))
+    buf.array = np.zeros((6,))
+    for i in range(6):
+        buf.append(i)
+    # set middle slice
+    buf[2:4] = np.array([99, 100])
+    out = buf[1:5]
+    assert out.tolist() == [1, 99, 100, 4]
+
+
+def test_drop_at_shifts_and_preserves_recent_half():
+    buf = CircularBuffer((6,), drop_at=4)
+    buf.array = np.zeros((6,))
+    # After 4 appends, drop_at triggers, shifting left by drop_at/2=2
+    for i in range(6):
+        buf.append(i + 1)
+    # index should have shifted back by 2 during append 4, then continued to 6
+    # Ensure latest elements are present at the end
+    assert buf[buf.index] == 6
+    assert buf[buf.index - 1] == 5

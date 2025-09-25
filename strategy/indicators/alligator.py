@@ -3,7 +3,7 @@ from collections import namedtuple
 import numpy as np
 import numpy.typing as npt
 
-from strategy.helpers import np_shift, slice_candles
+from strategy.utils.helpers import np_shift, slice_candles
 
 AG = namedtuple("AG", ["jaw", "teeth", "lips"])
 

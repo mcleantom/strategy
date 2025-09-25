@@ -5,7 +5,7 @@ import arrow
 import requests
 from loguru import logger
 
-import strategy.helpers as sh
+import strategy.utils.helpers as sh
 from strategy.modes.import_candles_mode.drivers.base_candles_importer import CandlesImporter
 
 

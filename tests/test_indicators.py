@@ -5,7 +5,7 @@ from tests.data.test_candle_indicators import test_candles_10, test_candles_19
 
 import strategy.indicators as ta
 from strategy.db.candle import Candle
-from strategy.helpers import to_numpy_array
+from strategy.utils.helpers import to_numpy_array
 
 
 def _to_db_candles(raw_candles: list[tuple[float, ...]]) -> npt.NDArray:

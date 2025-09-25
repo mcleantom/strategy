@@ -1,1 +1,3 @@
-from strategy.app import app
+__all__ = [
+    "strategy",
+]

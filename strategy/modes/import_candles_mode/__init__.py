@@ -12,7 +12,10 @@ from sqlalchemy.future import select
 
 from strategy.db.base import SessionLocal
 from strategy.db.candle import Candle
-from strategy.helpers import (
+from strategy.models.enums import ETimeframe
+from strategy.modes.import_candles_mode.drivers.alpaca_importer import AlpacaImporter
+from strategy.modes.import_candles_mode.drivers.base_candles_importer import CandlesImporter
+from strategy.utils.helpers import (
     arrow_to_timestamp,
     date_diff_in_days,
     generate_unique_id,
@@ -21,9 +24,6 @@ from strategy.helpers import (
     timestamp_to_time,
     to_structured_array,
 )
-from strategy.models.enums import ETimeframe
-from strategy.modes.import_candles_mode.drivers.alpaca_importer import AlpacaImporter
-from strategy.modes.import_candles_mode.drivers.base_candles_importer import CandlesImporter
 
 CANDLE_DRIVERS: dict[str, Callable[[], CandlesImporter]] = {"alpaca": lambda: AlpacaImporter()}
 
