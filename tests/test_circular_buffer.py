@@ -1,5 +1,6 @@
-from strategy.circular_buffer import CircularBuffer
 import numpy as np
+
+from strategy.circular_buffer import CircularBuffer
 
 
 def test_append():

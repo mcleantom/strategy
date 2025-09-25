@@ -56,7 +56,7 @@ class AlpacaImporter(CandlesImporter):
             "start": self._convert_timestamp_to_iso(start_timestamp),
             "timeframe": timeframe,
             "limit": self.count,
-            "adjustment": "raw"
+            "adjustment": "raw",
         }
         response = requests.get(url, headers=self._get_headers(), params=params)
         self.validate_response(response)

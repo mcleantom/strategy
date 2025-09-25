@@ -1,7 +1,6 @@
-from sqlalchemy.orm import DeclarativeBase
-from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
+from sqlalchemy.orm import DeclarativeBase, sessionmaker
 
 SQLALCHEMY_DATABASE_URL = "postgresql://strategy_user:password@localhost/strategy_db"
 ASYNC_SQLALCHEMY_DATABASE_URL = "postgresql+asyncpg://strategy_user:password@localhost/strategy_db"

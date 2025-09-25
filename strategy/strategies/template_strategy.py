@@ -1,8 +1,7 @@
-from strategy.strategy import Strategy, Order
+from strategy.strategy import Order, Strategy
 
 
 class MyStrategy(Strategy):
-
     def should_long(self) -> bool:
         pass
 

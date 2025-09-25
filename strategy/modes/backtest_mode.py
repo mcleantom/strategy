@@ -5,14 +5,12 @@ import numpy as np
 import numpy.typing as npt
 import pandas as pd
 from tqdm import tqdm
-from loguru import logger
 
 import strategy.helpers as sh
-from strategy.db.candle import Candle
-from strategy.strategy import Order, Strategy
-from strategy.modes.import_candles_mode import generate_candles_from_one_minute_candles
-from strategy.models.enums import ETimeframe
 from strategy.helpers import to_numpy_array
+from strategy.models.enums import ETimeframe
+from strategy.modes.import_candles_mode import generate_candles_from_one_minute_candles
+from strategy.strategy import Order, Strategy
 
 
 @dataclass
@@ -33,7 +31,9 @@ class Equity:
 
 
 class Backtester:
-    def __init__(self, strategy: Strategy, initial_balance: float = 100_000, timeframe: ETimeframe = ETimeframe.MINUTE_1):
+    def __init__(
+        self, strategy: Strategy, initial_balance: float = 100_000, timeframe: ETimeframe = ETimeframe.MINUTE_1
+    ):
         self.strategy = strategy
         self.balance = initial_balance
         self.position = None
@@ -57,10 +57,9 @@ class Backtester:
         candles = generate_candles_from_one_minute_candles(candles, self.timeframe)
         self.candles = candles
 
-        self.equity_curve.append(Equity(
-            value=self.balance,
-            date=sh.timestamp_to_arrow(int(candles["timestamp"][0])).datetime
-        ))
+        self.equity_curve.append(
+            Equity(value=self.balance, date=sh.timestamp_to_arrow(int(candles["timestamp"][0])).datetime)
+        )
         # Avoid warmup for small datasets used in unit tests
         warmup_candles = 0 if len(candles) < 300 else 250
         for i in range(warmup_candles):
@@ -72,8 +71,7 @@ class Backtester:
             total=len(candles),
             desc="Backtesting Candles",
         )
-        last_exit_index = 0
-        for i, candle in progress_bar:
+        for _, candle in progress_bar:
             self.strategy.store.candles.add_candle(candle)
             self.strategy._available_margin = self.balance
             if self.strategy.should_long() and self.position is None:
@@ -86,15 +84,11 @@ class Backtester:
                 raise RuntimeError("Ran out of money")
             daily_return = (self.balance - self.equity_curve[-1].value) / self.equity_curve[-1].value
             self.daily_returns.append(daily_return)
-            self.equity_curve.append(Equity(
-                value=self.balance,
-                date=sh.timestamp_to_arrow(int(candle["timestamp"])) .datetime
-            ))
+            self.equity_curve.append(
+                Equity(value=self.balance, date=sh.timestamp_to_arrow(int(candle["timestamp"])).datetime)
+            )
 
-            progress_bar.set_postfix({
-                "Balance": f"{self.balance:.2f}",
-                "Trades": len(self.trades)
-            })
+            progress_bar.set_postfix({"Balance": f"{self.balance:.2f}", "Trades": len(self.trades)})
 
         progress_bar.close()
 
@@ -139,7 +133,7 @@ class Backtester:
         self.last_timestamp = int(candle["timestamp"])
 
     def exit_short(self, candle: npt.NDArray) -> None:
-        exit_price = float(candle["close"]) 
+        exit_price = float(candle["close"])
         trade_pnl = (self.entry_price - exit_price) * self.last_order.quantity
         self.pnl += trade_pnl
         self.balance -= trade_pnl  # exit_price * self.last_order.quantity

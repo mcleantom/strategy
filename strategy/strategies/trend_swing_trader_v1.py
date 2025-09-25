@@ -1,10 +1,9 @@
-from strategy.strategy import Strategy, Order
 import strategy.indicators as ta
 from strategy import utils
+from strategy.strategy import Order, Strategy
 
 
 class TrendSwingTrader(Strategy):
-
     @property
     def adx(self):
         return ta.adx(self.candles) > 25
@@ -29,12 +28,7 @@ class TrendSwingTrader(Strategy):
         stop_loss = entry - ta.atr(self.candles) * 2
         qty = utils.risk_to_qty(self.available_margin, 5, entry, stop_loss, fee_rate=0)
         take_profit = self.price + ta.atr(self.candles) * 3
-        return Order(
-            quantity=qty,
-            price=entry,
-            stop_loss=stop_loss,
-            take_profit=take_profit
-        )
+        return Order(quantity=qty, price=entry, stop_loss=stop_loss, take_profit=take_profit)
 
     def should_short(self) -> bool:
         return self.trend == -1 and self.adx
@@ -45,12 +39,7 @@ class TrendSwingTrader(Strategy):
         stop_loss = entry + ta.atr(self.candles) * 2
         qty = utils.risk_to_qty(self.available_margin, 5, entry, stop_loss, fee_rate=0) * 2
         take_profit = self.price - ta.ad(self.candles) * 3
-        return Order(
-            quantity=qty,
-            price=entry,
-            stop_loss=stop_loss,
-            take_profit=take_profit
-        )
+        return Order(quantity=qty, price=entry, stop_loss=stop_loss, take_profit=take_profit)
 
     def should_cancel_entry(self) -> bool:
         return False

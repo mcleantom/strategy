@@ -1,8 +1,14 @@
 import math
 
 
-def risk_to_qty(capital: float, risk_per_capital: float, entry_price: float, stop_loss_price: float, precision: int = 8,
-                fee_rate: float = 0) -> float:
+def risk_to_qty(
+    capital: float,
+    risk_per_capital: float,
+    entry_price: float,
+    stop_loss_price: float,
+    precision: int = 8,
+    fee_rate: float = 0,
+) -> float:
     """
     a risk management tool to quickly get the qty based on risk percentage
 
@@ -35,7 +41,7 @@ def risk_to_size(capital_size: float, risk_percentage: float, risk_per_qty: floa
     :return: float
     """
     if risk_per_qty == 0:
-        raise ValueError('risk cannot be zero')
+        raise ValueError("risk cannot be zero")
 
     risk_percentage /= 100
     temp_size = ((risk_percentage * capital_size) / risk_per_qty) * entry_price
@@ -54,7 +60,7 @@ def size_to_qty(position_size: float, entry_price: float, precision: int = 3, fe
     """
     # make sure entry_price is not None
     if entry_price is None:
-        raise TypeError(f"entry_price is None")
+        raise TypeError("entry_price is None")
 
     if math.isnan(position_size) or math.isnan(entry_price):
         raise TypeError(f"position_size: {position_size}, entry_price: {entry_price}")
@@ -66,5 +72,5 @@ def size_to_qty(position_size: float, entry_price: float, precision: int = 3, fe
 
 
 def floor_with_precision(num: float, precision: int = 0) -> float:
-    temp = 10 ** precision
+    temp = 10**precision
     return math.floor(num * temp) / temp

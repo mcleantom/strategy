@@ -1,10 +1,9 @@
-from .base_exchange import Exchange
-import os
 import requests
+
+from .base_exchange import Exchange
 
 
 class AlpacaExchange(Exchange):
-
     def __init__(self):
         self.base_url = "https://paper-api.alpaca.markets/v2"
         self.api_key = "PKXVNOY1VHW9APDIWRCG"  # os.environ["APCA_API_KEY_ID"]
@@ -21,7 +20,7 @@ class AlpacaExchange(Exchange):
             "side": side,
             "type": "market",
             "time_in_force": "gtc",
-            "reduce_only": reduce_only
+            "reduce_only": reduce_only,
         }
         response = requests.post(f"{self.base_url}/orders", json=order_data, headers=self.headers)
         response.raise_for_status()
@@ -35,7 +34,7 @@ class AlpacaExchange(Exchange):
             "type": "limit",
             "limit_price": price,
             "time_in_force": "gtc",
-            "reduce_only": reduce_only
+            "reduce_only": reduce_only,
         }
         response = requests.post(f"{self.base_url}/orders", json=order_data, headers=self.headers)
         response.raise_for_status()
@@ -49,7 +48,7 @@ class AlpacaExchange(Exchange):
             "type": "stop",
             "stop_price": price,
             "time_in_force": "gtc",
-            "reduce_only": reduce_only
+            "reduce_only": reduce_only,
         }
         response = requests.post(f"{self.base_url}/orders", json=order_data, headers=self.headers)
         response.raise_for_status()

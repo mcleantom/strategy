@@ -3,7 +3,6 @@ import numpy.typing as npt
 
 
 class CircularBuffer:
-
     def __init__(self, shape: tuple, drop_at: int = None):
         self.index = -1
         self.array = np.zeros(shape)
@@ -16,14 +15,14 @@ class CircularBuffer:
         return self.array.shape[0]
 
     def __str__(self):
-        return str(self.array[:self.index + 1])
+        return str(self.array[: self.index + 1])
 
     def __len__(self):
         return self.index + 1
 
     def __getitem__(self, i):
         if isinstance(i, str):
-            return self.array[i][:self.index+1]
+            return self.array[i][: self.index + 1]
         if isinstance(i, slice):
             start, stop, step = i.indices(self.index + 1)
             return self.array[start:stop]
@@ -31,7 +30,7 @@ class CircularBuffer:
         if i < 0:
             i = (self.index + 1) - abs(i)
         if self.index == -1 or i > self.index or i < 0:
-            raise IndexError(f'list assignment index out of range. self.index={self.index}, i={i}')
+            raise IndexError(f"list assignment index out of range. self.index={self.index}, i={i}")
         return self.array[i]
 
     def __setitem__(self, i, item) -> None:
@@ -53,7 +52,7 @@ class CircularBuffer:
 
         # validation
         if i > self.index or i < 0:
-            raise IndexError('list assignment index out of range')
+            raise IndexError("list assignment index out of range")
 
         self.array[i] = item
 
@@ -63,11 +62,7 @@ class CircularBuffer:
         if self.index != 0 and (self.index + 1) % self.bucket_size == 0:
             self.array = np.concatenate((self.array, np.zeros_like(self.array)), axis=0)
 
-        if (
-            self.drop_at is not None
-            and self.index != 0
-            and (self.index + 1) % self.drop_at == 0
-        ):
+        if self.drop_at is not None and self.index != 0 and (self.index + 1) % self.drop_at == 0:
             shift_num = int(self.drop_at / 2)
             self.index -= shift_num
             self.array = self.np_shift(self.array, -shift_num)

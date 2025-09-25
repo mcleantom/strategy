@@ -1,9 +1,10 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
+
 import numpy.typing as npt
 
-from strategy.store.store import Store
 from strategy.models.position import Position, PositionType
+from strategy.store.store import Store
 
 
 @dataclass

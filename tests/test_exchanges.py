@@ -1,7 +1,8 @@
 import os
-import pytest
-from strategy.exchange.alpaca_exchange import AlpacaExchange
 
+import pytest
+
+from strategy.exchange.alpaca_exchange import AlpacaExchange
 
 requires_live = pytest.mark.skipif(os.getenv("LIVE_EXCHANGE") != "1", reason="Skipping live exchange calls")
 

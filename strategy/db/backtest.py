@@ -1,9 +1,11 @@
 from __future__ import annotations  # Enable future annotations for forward references
 
-from sqlalchemy import Column, Integer, Float, ForeignKey, DateTime, String
-from sqlalchemy.orm import relationship, Mapped, mapped_column
-from .base import Base
 from datetime import datetime
+
+from sqlalchemy import DateTime, Float, ForeignKey, Integer, String
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+from .base import Base
 
 
 class EquityCurveModel(Base):
@@ -44,7 +46,9 @@ class PerformanceMetricsModel(Base):
     average_win: Mapped[float] = mapped_column(Float, nullable=True)
     average_loss: Mapped[float] = mapped_column(Float, nullable=True)
 
-    backtest_result: Mapped[BacktestResultModel] = relationship("BacktestResultModel", back_populates="performance_metrics")
+    backtest_result: Mapped[BacktestResultModel] = relationship(
+        "BacktestResultModel", back_populates="performance_metrics"
+    )
 
 
 class RiskMetricsModel(Base):

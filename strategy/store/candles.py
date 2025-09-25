@@ -1,7 +1,8 @@
-from strategy.db.candle import Candle
-from strategy.circular_buffer import CircularBuffer
-from strategy.helpers import to_numpy_array, to_candle, to_structured_array
 import numpy.typing as npt
+
+from strategy.circular_buffer import CircularBuffer
+from strategy.db.candle import Candle
+from strategy.helpers import to_candle, to_structured_array
 
 
 class CandleStore:

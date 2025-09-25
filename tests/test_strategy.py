@@ -1,5 +1,7 @@
 import os
+
 import pytest
+
 from strategy.db.base import SessionLocal
 from strategy.db.candle import Candle
 from strategy.modes.backtest_mode import Backtester

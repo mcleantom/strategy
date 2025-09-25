@@ -1,5 +1,7 @@
 from enum import Enum
+
 from fastapi import APIRouter
+
 from strategy.modes.import_candles_mode import drivers
 
 

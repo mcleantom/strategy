@@ -1,7 +1,7 @@
-from strategy.strategy import Strategy, Order
-from strategy.db.candle import Candle
-from strategy.modes.backtest_mode import Backtester
 import numpy as np
+
+from strategy.modes.backtest_mode import Backtester
+from strategy.strategy import Order, Strategy
 
 
 class ExampleStrategy(Strategy):
@@ -29,10 +29,7 @@ class ExampleStrategy(Strategy):
 def test_buy_short():
     strategy = ExampleStrategy()
     backtester = Backtester(strategy, initial_balance=1000)
-    order = Order(
-        quantity=10,
-        price=100
-    )
+    order = Order(quantity=10, price=100)
     # Use structured array rows in place of ORM Candle for backtester methods
     dtype = [("timestamp", "i8"), ("open", "f8"), ("close", "f8"), ("high", "f8"), ("low", "f8"), ("volume", "f8")]
     candle_enter = np.array([(1, 100, 100, 100, 100, 0)], dtype=dtype)[0]
@@ -42,4 +39,3 @@ def test_buy_short():
     candle_exit = np.array([(1, 100, 100, 100, 100, 0)], dtype=dtype)[0]
     backtester.exit_short(candle_exit)
     assert backtester.balance == 1000
-

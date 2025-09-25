@@ -1,12 +1,11 @@
-from strategy.db.base import AsyncSessionLocal
-from sqlalchemy.ext.asyncio import AsyncSession
-from typing import Generator, Annotated
+from typing import Annotated, Generator
+
 from fastapi import Depends
+from sqlalchemy.ext.asyncio import AsyncSession
 
+from strategy.db.base import AsyncSessionLocal
 
-__all__ = [
-    "SessionDep"
-]
+__all__ = ["SessionDep"]
 
 
 async def get_db() -> Generator:

@@ -2,12 +2,12 @@ import datetime
 
 from fastapi import APIRouter
 from pydantic import BaseModel
-from strategy.db.candle import Candle
-from .deps import SessionDep
-from sqlalchemy.future import select
 from sqlalchemy import delete
-from strategy.modes.import_candles_mode import run
+from sqlalchemy.future import select
 
+from strategy.db.candle import Candle
+from strategy.modes.import_candles_mode import run
+from .deps import SessionDep
 
 candles_router = APIRouter(tags=["Candles"])
 
@@ -22,20 +22,12 @@ async def get_tickers(session: SessionDep) -> list[GetTickersResponseItem]:
     statement = select(Candle.exchange, Candle.symbol).distinct()
     result = await session.execute(statement)
     candles_query = result.fetchall()
-    return [
-        GetTickersResponseItem(exchange=candle[0], symbol=candle[1])
-        for candle in candles_query
-    ]
+    return [GetTickersResponseItem(exchange=candle[0], symbol=candle[1]) for candle in candles_query]
 
 
 @candles_router.post("/candles/import/{exchange}/{symbol}")
 def import_candles(exchange: str, symbol: str, start_date: datetime.date):
-    run(
-        client_id="strategy",
-        exchange=exchange,
-        symbol=symbol,
-        start_date_str=start_date.strftime("%Y-%m-%d")
-    )
+    run(client_id="strategy", exchange=exchange, symbol=symbol, start_date_str=start_date.strftime("%Y-%m-%d"))
 
 
 class GetCandlesResponseItem(BaseModel):
@@ -48,21 +40,14 @@ class GetCandlesResponseItem(BaseModel):
 
 @candles_router.delete("/candles/{exchange}/{symbol}")
 async def delete_candles(exchange: str, symbol: str, session: SessionDep):
-    statement = delete(Candle).where(
-        Candle.exchange == exchange,
-        Candle.symbol == symbol
-    )
-    result = await session.execute(statement)
+    statement = delete(Candle).where(Candle.exchange == exchange, Candle.symbol == symbol)
+    await session.execute(statement)
     await session.commit()
 
 
 @candles_router.get("/candles/{exchange}/{symbol}", response_model=list[GetCandlesResponseItem])
 async def get_candles(
-        exchange: str,
-        symbol: str,
-        start_time: datetime.datetime,
-        end_time: datetime.datetime,
-        session: SessionDep
+    exchange: str, symbol: str, start_time: datetime.datetime, end_time: datetime.datetime, session: SessionDep
 ) -> list[GetCandlesResponseItem]:
     statement = (
         select(Candle)
@@ -70,7 +55,7 @@ async def get_candles(
             Candle.exchange == exchange,
             Candle.symbol == symbol,
             Candle.timestamp >= int(start_time.timestamp() * 1000),
-            Candle.timestamp <= int(end_time.timestamp() * 1000)
+            Candle.timestamp <= int(end_time.timestamp() * 1000),
         )
         .order_by(Candle.timestamp.asc())
     )

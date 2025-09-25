@@ -84,7 +84,11 @@ def to_candle(row_or_arr) -> Candle:
             )
 
     # Fallback: positional row (open, close, high, low, volume)
-    row = row_or_arr[0] if hasattr(row_or_arr, "__len__") and len(row_or_arr) and hasattr(row_or_arr[0], "__len__") else row_or_arr
+    row = (
+        row_or_arr[0]
+        if hasattr(row_or_arr, "__len__") and len(row_or_arr) and hasattr(row_or_arr[0], "__len__")
+        else row_or_arr
+    )
     return Candle(
         open=float(row[0]),
         close=float(row[1]),

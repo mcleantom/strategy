@@ -1,24 +1,31 @@
 import asyncio
 import datetime
-
-from fastapi import APIRouter, HTTPException, status, Depends, BackgroundTasks
-from pydantic import BaseModel
-from strategy.db.candle import Candle
-from strategy.modes.backtest_mode import Backtester, Trade
-from strategy.app.deps import SessionDep
-from sqlalchemy.future import select
-from sqlalchemy import desc, asc
-from strategy.models.enums import ETimeframe
-from loguru import logger
-import quantstats as qs
-import pandas as pd
 import importlib.util
 import inspect
-from strategy.strategy import Strategy
-from strategy.app.strategies import STRATEGIES_DIR
-from strategy.helpers import to_numpy_array
-from strategy.db.backtest import BacktestResultModel, EquityCurveModel, BaselineCurveModel, RiskMetricsModel, TradeMetricsModel, PerformanceMetricsModel
 
+import pandas as pd
+import quantstats as qs
+from fastapi import APIRouter, BackgroundTasks, HTTPException, status
+from loguru import logger
+from pydantic import BaseModel
+from sqlalchemy import desc
+from sqlalchemy.future import select
+
+from strategy.app.deps import SessionDep
+from strategy.app.strategies import STRATEGIES_DIR
+from strategy.db.backtest import (
+    BacktestResultModel,
+    BaselineCurveModel,
+    EquityCurveModel,
+    PerformanceMetricsModel,
+    RiskMetricsModel,
+    TradeMetricsModel,
+)
+from strategy.db.candle import Candle
+from strategy.helpers import to_numpy_array
+from strategy.models.enums import ETimeframe
+from strategy.modes.backtest_mode import Backtester, Trade
+from strategy.strategy import Strategy
 
 backtest_router = APIRouter(tags=["Backtest"])
 
@@ -31,14 +38,11 @@ def load_strategy(strategy_name: str) -> Strategy:
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
 
-    for name, obj in inspect.getmembers(module, inspect.isclass):
+    for _name, obj in inspect.getmembers(module, inspect.isclass):
         if issubclass(obj, Strategy) and obj is not Strategy:
             return obj()
 
-    raise HTTPException(
-        status_code=status.HTTP_400_BAD_REQUEST,
-        detail="No valid strategy class found"
-    )
+    raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="No valid strategy class found")
 
 
 class BaselineItem(BaseModel):
@@ -107,23 +111,17 @@ class BacktestRequest(BaseModel):
     strategy: str
 
 
-def perform_backtest(
-        backtest: BacktestRequest,
-        session: SessionDep
-):
+def perform_backtest(backtest: BacktestRequest, session: SessionDep):
     asyncio.run(_perform_backtest(backtest, session))
 
 
-async def _perform_backtest(
-        backtest: BacktestRequest,
-        session: SessionDep
-):
+async def _perform_backtest(backtest: BacktestRequest, session: SessionDep):
     strategy_to_run = load_strategy(backtest.strategy)
-    logger.info(f"Loading candles")
+    logger.info("Loading candles")
     stmt = select(Candle).where(Candle.symbol == "AAPL").order_by(Candle.timestamp)
     result = await session.execute(stmt)
     candles = result.scalars().all()
-    logger.info(f"Loaded candles")
+    logger.info("Loaded candles")
     strategy = strategy_to_run
     initial_balance = 10_000
     backtester = Backtester(strategy=strategy, initial_balance=initial_balance, timeframe=backtest.timeframe)
@@ -131,34 +129,37 @@ async def _perform_backtest(
     backtester.backtest(candles)
     initial_price = candles["close"][0]
 
-    equity_curve_series = pd.Series(
-        [item.value for item in backtester.equity_curve],
-        index=pd.to_datetime([item.date for item in backtester.equity_curve])
-    ).resample("1D").last().interpolate(method="linear")
+    equity_curve_series = (
+        pd.Series(
+            [item.value for item in backtester.equity_curve],
+            index=pd.to_datetime([item.date for item in backtester.equity_curve]),
+        )
+        .resample("1D")
+        .last()
+        .interpolate(method="linear")
+    )
 
-    baseline_series = pd.Series(
-        candles["close"] * (initial_balance / initial_price),
-        index=pd.to_datetime(candles["timestamp"], unit="ms")
-    ).resample("1D").last().interpolate(method="linear")
+    baseline_series = (
+        pd.Series(
+            candles["close"] * (initial_balance / initial_price), index=pd.to_datetime(candles["timestamp"], unit="ms")
+        )
+        .resample("1D")
+        .last()
+        .interpolate(method="linear")
+    )
 
     baseline = [
-        BaselineItem(
-            close=value,
-            unix_seconds=int(timestamp.timestamp())
-        )
+        BaselineItem(close=value, unix_seconds=int(timestamp.timestamp()))
         for timestamp, value in baseline_series.items()
     ]
     equity_curve = [
-        EquityItem(
-            value=value,
-            unix_seconds=int(timestamp.timestamp())
-        )
+        EquityItem(value=value, unix_seconds=int(timestamp.timestamp()))
         for timestamp, value in equity_curve_series.items()
     ]
 
     equity_series = pd.Series(
         [item.value for item in backtester.equity_curve],
-        index=pd.to_datetime([item.date for item in backtester.equity_curve])
+        index=pd.to_datetime([item.date for item in backtester.equity_curve]),
     )
     return_series = equity_series.pct_change().dropna()
 
@@ -175,7 +176,7 @@ async def _perform_backtest(
         serenity_index=qs.stats.serenity_index(return_series),
         average_win_loss=average_win / average_loss if average_loss != 0 else 0,
         average_win=average_win,
-        average_loss=average_loss
+        average_loss=average_loss,
     )
 
     risk_metrics = RiskMetrics(
@@ -189,7 +190,7 @@ async def _perform_backtest(
         average_holding_period=0,
         gross_profit=sum(trade.pnl for trade in backtester.trades if trade.pnl > 0),
         gross_loss=sum(trade.pnl for trade in backtester.trades if trade.pnl < 0),
-        max_drawdown=qs.stats.max_drawdown(equity_series)
+        max_drawdown=qs.stats.max_drawdown(equity_series),
     )
 
     longs_count = sum(1 for trade in backtester.trades if trade.type == "long")
@@ -206,7 +207,7 @@ async def _perform_backtest(
         shorts_percentage=(shorts_count / len(backtester.trades)) * 100,
         fee=0,
         total_open_trades=0,
-        open_pl=0
+        open_pl=0,
     )
 
     backtest_result = BacktestResultModel(
@@ -214,7 +215,7 @@ async def _perform_backtest(
         start_balance=initial_balance,
         end_balance=equity_series.iloc[-1],
         start_time=pd.to_datetime(candles["timestamp"][0]),
-        end_time=pd.to_datetime(candles["timestamp"][-1])
+        end_time=pd.to_datetime(candles["timestamp"][-1]),
     )
 
     session.add(backtest_result)
@@ -224,16 +225,16 @@ async def _perform_backtest(
     for equity_item in equity_curve:
         equity_curve_db = EquityCurveModel(
             backtest_result_id=backtest_result.id,
-            timestamp=pd.to_datetime(equity_item.unix_seconds, unit='s'),
-            value=equity_item.value
+            timestamp=pd.to_datetime(equity_item.unix_seconds, unit="s"),
+            value=equity_item.value,
         )
         session.add(equity_curve_db)
 
     for baseline_item in baseline:
         baseline_curve_db = BaselineCurveModel(
             backtest_result_id=backtest_result.id,
-            timestamp=pd.to_datetime(baseline_item.unix_seconds, unit='s'),
-            value=baseline_item.close
+            timestamp=pd.to_datetime(baseline_item.unix_seconds, unit="s"),
+            value=baseline_item.close,
         )
         session.add(baseline_curve_db)
 
@@ -248,7 +249,7 @@ async def _perform_backtest(
         serenity_index=performance_metrics.serenity_index,
         average_win_loss=performance_metrics.average_win_loss,
         average_win=performance_metrics.average_win,
-        average_loss=performance_metrics.average_loss
+        average_loss=performance_metrics.average_loss,
     )
     session.add(performance_metrics_db)
 
@@ -264,7 +265,7 @@ async def _perform_backtest(
         average_holding_period=risk_metrics.average_holding_period,
         gross_profit=risk_metrics.gross_profit,
         gross_loss=risk_metrics.gross_loss,
-        max_drawdown=risk_metrics.max_drawdown
+        max_drawdown=risk_metrics.max_drawdown,
     )
     session.add(risk_metrics_db)
 
@@ -281,7 +282,7 @@ async def _perform_backtest(
         shorts_percentage=trade_metrics.shorts_percentage,
         fee=trade_metrics.fee,
         total_open_trades=trade_metrics.total_open_trades,
-        open_pl=trade_metrics.open_pl
+        open_pl=trade_metrics.open_pl,
     )
     session.add(trade_metrics_db)
 
@@ -294,10 +295,7 @@ async def run_backtest(session: SessionDep, backtest: BacktestRequest, backgroun
 
 
 @backtest_router.get("/backtests/{backtest_id}", response_model=BacktestResult)
-async def get_backtest_result(
-    backtest_id: int,
-    session: SessionDep
-) -> BacktestResult:
+async def get_backtest_result(backtest_id: int, session: SessionDep) -> BacktestResult:
     # Query the backtest result from the database
     stmt = select(BacktestResultModel).where(BacktestResultModel.id == backtest_id)
     result = await session.execute(stmt)
@@ -310,7 +308,9 @@ async def get_backtest_result(
     # Query related data (equity curve, baseline, metrics, etc.)
     equity_curve_stmt = select(EquityCurveModel).where(EquityCurveModel.backtest_result_id == backtest_id)
     baseline_curve_stmt = select(BaselineCurveModel).where(BaselineCurveModel.backtest_result_id == backtest_id)
-    performance_metrics_stmt = select(PerformanceMetricsModel).where(PerformanceMetricsModel.backtest_result_id == backtest_id)
+    performance_metrics_stmt = select(PerformanceMetricsModel).where(
+        PerformanceMetricsModel.backtest_result_id == backtest_id
+    )
     risk_metrics_stmt = select(RiskMetricsModel).where(RiskMetricsModel.backtest_result_id == backtest_id)
     trade_metrics_stmt = select(TradeMetricsModel).where(TradeMetricsModel.backtest_result_id == backtest_id)
 
@@ -322,8 +322,14 @@ async def get_backtest_result(
     trade_metrics_result = await session.execute(trade_metrics_stmt)
 
     # Fetch the related data
-    equity_curve = [EquityItem(value=item.value, unix_seconds=int(item.timestamp.timestamp())) for item in equity_curve_result.scalars()]
-    baseline = [BaselineItem(close=item.value, unix_seconds=int(item.timestamp.timestamp())) for item in baseline_curve_result.scalars()]
+    equity_curve = [
+        EquityItem(value=item.value, unix_seconds=int(item.timestamp.timestamp()))
+        for item in equity_curve_result.scalars()
+    ]
+    baseline = [
+        BaselineItem(close=item.value, unix_seconds=int(item.timestamp.timestamp()))
+        for item in baseline_curve_result.scalars()
+    ]
     performance_metrics = performance_metrics_result.scalars().first()
     risk_metrics = risk_metrics_result.scalars().first()
     trade_metrics = trade_metrics_result.scalars().first()
@@ -343,7 +349,7 @@ async def get_backtest_result(
             serenity_index=performance_metrics.serenity_index,
             average_win_loss=performance_metrics.average_win_loss,
             average_win=performance_metrics.average_win,
-            average_loss=performance_metrics.average_loss
+            average_loss=performance_metrics.average_loss,
         ),
         risk_metrics=RiskMetrics(
             total_losing_streak=risk_metrics.total_losing_streak,
@@ -356,7 +362,7 @@ async def get_backtest_result(
             average_holding_period=risk_metrics.average_holding_period,
             gross_profit=risk_metrics.gross_profit,
             gross_loss=risk_metrics.gross_loss,
-            max_drawdown=risk_metrics.max_drawdown
+            max_drawdown=risk_metrics.max_drawdown,
         ),
         trade_metrics=TradeMetrics(
             total_trades=trade_metrics.total_trades,
@@ -370,8 +376,8 @@ async def get_backtest_result(
             shorts_percentage=trade_metrics.shorts_percentage,
             fee=trade_metrics.fee,
             total_open_trades=trade_metrics.total_open_trades,
-            open_pl=trade_metrics.open_pl
-        )
+            open_pl=trade_metrics.open_pl,
+        ),
     )
     return backtest_response
 
@@ -384,29 +390,21 @@ class ListBacktestIdsResultItem(BaseModel):
 
 @backtest_router.get("/backtests", response_model=list[ListBacktestIdsResultItem])
 async def list_backtest_ids(session: SessionDep) -> list[ListBacktestIdsResultItem]:
-    stmt = select(
-        BacktestResultModel.id,
-        BacktestResultModel.strategy_name,
-        BacktestResultModel.date_created
-    ).order_by(desc(BacktestResultModel.date_created))
+    stmt = select(BacktestResultModel.id, BacktestResultModel.strategy_name, BacktestResultModel.date_created).order_by(
+        desc(BacktestResultModel.date_created)
+    )
     result = await session.execute(stmt)
     backtest_data = result.all()
     backtest_items = [
-        ListBacktestIdsResultItem(
-            id=row.id,
-            strategy_name=row.strategy_name,
-            date_created=row.date_created
-        ) for row in backtest_data
+        ListBacktestIdsResultItem(id=row.id, strategy_name=row.strategy_name, date_created=row.date_created)
+        for row in backtest_data
     ]
     return backtest_items
 
 
 @backtest_router.delete("/backtests/{backtest_id}")
 async def delete_backtest_result(backtest_id: int, session: SessionDep):
-    query = (
-        select(BacktestResultModel)
-        .filter(BacktestResultModel.id == backtest_id)
-    )
+    query = select(BacktestResultModel).filter(BacktestResultModel.id == backtest_id)
     result = await session.execute(query)
     backtest = result.scalar_one_or_none()
 

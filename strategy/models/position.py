@@ -18,4 +18,3 @@ class Position:
     opened_at: datetime.datetime
     closed_at: datetime.datetime
     type: PositionType
-

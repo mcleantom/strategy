@@ -2,13 +2,13 @@ import time
 from typing import Any, Dict, List, Union
 
 import arrow
+import numpy as np
+import numpy.typing as npt
 import pydash
 from loguru import logger
 from sqlalchemy import asc, or_
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.future import select
-import numpy.typing as npt
-import numpy as np
 
 from strategy.db.base import SessionLocal
 from strategy.db.candle import Candle
@@ -19,7 +19,7 @@ from strategy.helpers import (
     now_to_timestamp,
     timestamp_to_arrow,
     timestamp_to_time,
-    to_structured_array
+    to_structured_array,
 )
 from strategy.models.enums import ETimeframe
 from strategy.modes.import_candles_mode.drivers.alpaca_importer import AlpacaImporter
@@ -209,18 +209,16 @@ def generate_candles_from_one_minute_candles(candles: npt.NDArray, timeframe: ET
     num = timeframe.to_minutes()
     for i in range(len(candles)):
         if (i + 1) % num == 0:
-            tmp_candles = candles[i - (num - 1):(i + 1)]
+            tmp_candles = candles[i - (num - 1) : (i + 1)]
             aggregated_candle = (
                 tmp_candles["timestamp"][0],
                 tmp_candles["open"][0],
                 tmp_candles["close"][-1],
                 tmp_candles["high"].max(),
                 tmp_candles["low"].min(),
-                tmp_candles["volume"].sum()
+                tmp_candles["volume"].sum(),
             )
-            generated_candles.append(
-                aggregated_candle
-            )
+            generated_candles.append(aggregated_candle)
     return np.array(generated_candles, dtype=candles.dtype)
 
 

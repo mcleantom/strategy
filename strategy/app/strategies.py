@@ -1,7 +1,7 @@
-from fastapi import APIRouter, HTTPException, status, UploadFile, File
 from pathlib import Path
-from pydantic import BaseModel
 
+from fastapi import APIRouter, File, HTTPException, UploadFile, status
+from pydantic import BaseModel
 
 strategies_router = APIRouter(tags=["Strategies"])
 
