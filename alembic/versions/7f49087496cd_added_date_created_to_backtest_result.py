@@ -5,6 +5,7 @@ Revises: c26039d3a3d8
 Create Date: 2024-12-25 19:35:21.771978
 
 """
+
 from alembic import op
 import sqlalchemy as sa
 from datetime import datetime

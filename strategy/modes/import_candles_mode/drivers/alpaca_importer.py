@@ -19,7 +19,7 @@ class AlpacaImporter(CandlesImporter):
 
     def get_starting_time(self, symbol: str) -> int:
         url = f"{self.base_url}/stocks/{symbol}/bars"
-        params = {
+        params: dict[str, str | int] = {
             "timeframe": "1Min",
             "limit": 1,
             "start": "1970-01-01T00:00:00Z",
@@ -52,7 +52,7 @@ class AlpacaImporter(CandlesImporter):
         if timeframe.endswith("m"):
             timeframe = timeframe.replace("m", "Min")
 
-        params = {
+        params: dict[str, str | int] = {
             "start": self._convert_timestamp_to_iso(start_timestamp),
             "timeframe": timeframe,
             "limit": self.count,

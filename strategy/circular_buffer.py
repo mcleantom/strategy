@@ -3,7 +3,7 @@ import numpy.typing as npt
 
 
 class CircularBuffer:
-    def __init__(self, shape: tuple, drop_at: int = None):
+    def __init__(self, shape: tuple, drop_at: int | None = None):
         self.index = -1
         self.array = np.zeros(shape)
         # self.bucket_size = shape[0]

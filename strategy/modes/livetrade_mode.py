@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from datetime import datetime, timezone
+from typing import Any
 
 from loguru import logger
 
@@ -22,10 +23,10 @@ class LiveTrader:
         self.symbol = symbol
         self.position: LiveTrade | None = None
         self.order_id: str | None = None
-        self.stop_loss = None
-        self.take_profit = None
-        self.pnl = 0
-        self.trades = []
+        self.stop_loss: float | None = None
+        self.take_profit: float | None = None
+        self.pnl: float = 0.0
+        self.trades: list[dict[str, Any]] = []
 
     def on_candle(self):
         if self.position is None:
@@ -56,23 +57,26 @@ class LiveTrader:
         )
 
     def exit_position(self, candle):
+        if self.position is None:
+            return
         current_price = candle["close"]
-        trade_pnl = 0
+        trade_pnl = 0.0
         if self.position.type == "long":
             trade_pnl = (current_price - self.position.entry_price) * self.position.quantity
         else:
             trade_pnl = (self.position.entry_price - current_price) * self.position.quantity
 
-        self.pnl += trade_pnl
+        self.pnl += float(trade_pnl)
         logger.info(f"Exiting {self.position.type} position at {current_price}, PnL: {trade_pnl}")
-        self.exchange.cancel_order(self.symbol, self.order_id)
+        if self.order_id is not None:
+            self.exchange.cancel_order(self.symbol, self.order_id)
         self.trades.append(
             {
                 "type": self.position.type,
                 "entry_price": self.position.entry_price,
                 "exit_price": current_price,
                 "quantity": self.position.quantity,
-                "pnl": trade_pnl,
+                "pnl": float(trade_pnl),
                 "entry_timestamp": self.position.entry_timestamp,
                 "exit_timestamp": datetime.now(tz=timezone.utc),
             }
@@ -84,13 +88,15 @@ class LiveTrader:
         """
         Check if we should exit the current position.
         """
+        if self.position is None:
+            return False
         current_price = candle["close"]
-        if self.stop_loss and (
+        if self.stop_loss is not None and (
             (self.position.type == "long" and current_price <= self.stop_loss)
             or (self.position.type == "short" and current_price >= self.stop_loss)
         ):
             return True
-        if self.take_profit and (
+        if self.take_profit is not None and (
             (self.position.type == "long" and current_price >= self.take_profit)
             or (self.position.type == "short" and current_price <= self.take_profit)
         ):

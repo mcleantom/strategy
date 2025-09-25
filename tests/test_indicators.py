@@ -8,7 +8,7 @@ from strategy.db.candle import Candle
 from strategy.helpers import to_numpy_array
 
 
-def _to_db_candles(raw_candles: list[tuple[float]]) -> npt.NDArray:
+def _to_db_candles(raw_candles: list[tuple[float, ...]]) -> npt.NDArray:
     return to_numpy_array(
         [Candle(timestamp=c[0], high=c[3], low=c[4], close=c[2], open=c[1], volume=c[5]) for c in raw_candles]
     )

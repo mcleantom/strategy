@@ -35,7 +35,11 @@ def load_strategy(strategy_name: str) -> Strategy:
     if not strategy_path.exists():
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Strategy does not exist")
     spec = importlib.util.spec_from_file_location(strategy_name, strategy_path)
+    if spec is None:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to load spec")
     module = importlib.util.module_from_spec(spec)
+    if spec.loader is None:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="No loader for module spec")
     spec.loader.exec_module(module)
 
     for _name, obj in inspect.getmembers(module, inspect.isclass):

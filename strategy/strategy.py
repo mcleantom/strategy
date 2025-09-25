@@ -24,7 +24,7 @@ class Strategy(ABC):
         self.timeframe = None
         self.hp = None
         self.index = 0
-        self.vars = {}
+        self.vars: dict[str, object] = {}
         self.increased_count = 0
         self.reduced_count = 0
         self.buy = None
@@ -32,14 +32,14 @@ class Strategy(ABC):
         self.stop_loss = None
         self.take_profit = None
         self.position: Position | None = None
-        self._available_margin = 0
+        self._available_margin: float = 0.0
 
     @abstractmethod
     def go_long(self) -> Order:
         pass
 
     @abstractmethod
-    def go_short(self) -> Order:
+    def go_short(self) -> Order | None:
         pass
 
     @abstractmethod

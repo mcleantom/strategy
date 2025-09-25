@@ -1,5 +1,5 @@
 import time
-from typing import Any, Dict, List, Union
+from typing import Any, Callable, Dict, List, Union
 
 import arrow
 import numpy as np
@@ -25,7 +25,7 @@ from strategy.models.enums import ETimeframe
 from strategy.modes.import_candles_mode.drivers.alpaca_importer import AlpacaImporter
 from strategy.modes.import_candles_mode.drivers.base_candles_importer import CandlesImporter
 
-drivers: dict[str, type(CandlesImporter)] = {"alpaca": AlpacaImporter}
+CANDLE_DRIVERS: dict[str, Callable[[], CandlesImporter]] = {"alpaca": lambda: AlpacaImporter()}
 
 
 def run(client_id: str, exchange: str, symbol: str, start_date_str: str, mode: str = "candles"):
@@ -40,7 +40,7 @@ def run(client_id: str, exchange: str, symbol: str, start_date_str: str, mode: s
     start_date = timestamp_to_arrow(start_timestamp)
     days_count = date_diff_in_days(start_date, until_date)
     candles_count = days_count * 1440
-    driver = drivers[exchange]()
+    driver = CANDLE_DRIVERS[exchange]()
 
     session = SessionLocal()
 
@@ -98,7 +98,7 @@ def _get_candles_from_backup_exchange(
     exchange: str, backup_driver: CandlesImporter, symbol: str, start_timestamp: int, end_timestamp: int
 ) -> list[dict[str, Union[str, Any]]]:
     timeframe = "1m"
-    total_candles = []
+    total_candles: list[dict[str, Union[str, Any]]] = []
     session = SessionLocal()
     statement = (
         select(Candle.timestamp, Candle.open, Candle.close, Candle.high, Candle.low, Candle.volume)
@@ -139,7 +139,7 @@ def _fill_absent_candles(
 ) -> List[Dict[str, Union[str, Any]]]:
     symbol = temp_candles[0]["symbol"]
     exchange = temp_candles[0]["exchange"]
-    candles = []
+    candles: list[Dict[str, Union[str, Any]]] = []
     first_candle = temp_candles[0]
     started = False
     loop_length = ((end_timestamp - start_timestamp) / 60_000) + 1
@@ -205,7 +205,7 @@ def store_candles_list(candles: list[dict]) -> None:
 
 
 def generate_candles_from_one_minute_candles(candles: npt.NDArray, timeframe: ETimeframe) -> npt.NDArray:
-    generated_candles = []
+    generated_candles: list[tuple] = []
     num = timeframe.to_minutes()
     for i in range(len(candles)):
         if (i + 1) % num == 0:

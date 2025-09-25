@@ -35,16 +35,16 @@ class Backtester:
         self, strategy: Strategy, initial_balance: float = 100_000, timeframe: ETimeframe = ETimeframe.MINUTE_1
     ):
         self.strategy = strategy
-        self.balance = initial_balance
-        self.position = None
-        self.entry_price = 0
-        self.pnl = 0
+        self.balance: float = initial_balance
+        self.position: str | None = None
+        self.entry_price: float = 0.0
+        self.pnl: float = 0.0
         self.trades: list[Trade] = []
-        self.stop_loss = None
-        self.take_profit = None
-        self.daily_returns = []
+        self.stop_loss: float | None = None
+        self.take_profit: float | None = None
+        self.daily_returns: list[float] = []
         self.equity_curve: list[Equity] = []
-        self.candles = []
+        self.candles: npt.NDArray | list = []
         self.last_order: Order | None = None
         self.last_timestamp: int | None = None
         self.timeframe = timeframe
@@ -77,13 +77,19 @@ class Backtester:
             if self.strategy.should_long() and self.position is None:
                 self.enter_long(self.strategy.go_long(), candle)
             elif self.strategy.should_short() and self.position is None:
-                self.enter_short(self.strategy.go_short(), candle)
+                short_order = self.strategy.go_short()
+                if short_order is not None:
+                    self.enter_short(short_order, candle)
             if self.should_exit_position(candle) and self.position is not None:
                 self.exit_position(candle)
             if self.balance <= 0:
                 raise RuntimeError("Ran out of money")
-            daily_return = (self.balance - self.equity_curve[-1].value) / self.equity_curve[-1].value
-            self.daily_returns.append(daily_return)
+            prev_equity = self.equity_curve[-1].value
+            if prev_equity != 0:
+                daily_return = (self.balance - prev_equity) / prev_equity
+            else:
+                daily_return = 0.0
+            self.daily_returns.append(float(daily_return))
             self.equity_curve.append(
                 Equity(value=self.balance, date=sh.timestamp_to_arrow(int(candle["timestamp"])).datetime)
             )
@@ -98,7 +104,7 @@ class Backtester:
 
     def enter_long(self, order: Order, candle: npt.NDArray) -> None:
         self.position = "long"
-        self.entry_price = order.price
+        self.entry_price = float(order.price)
         self.stop_loss = order.stop_loss
         self.take_profit = order.take_profit
         # self.balance -= order.price * order.quantity
@@ -106,8 +112,10 @@ class Backtester:
         self.last_timestamp = int(candle["timestamp"])
 
     def exit_long(self, candle: npt.NDArray) -> None:
+        if self.last_order is None:
+            return
         exit_price = float(candle["close"])
-        trade_pnl = (exit_price - self.entry_price) * self.last_order.quantity
+        trade_pnl = (exit_price - self.entry_price) * float(self.last_order.quantity)
         self.pnl += trade_pnl
         self.balance += trade_pnl  # exit_price * self.last_order.quantity
         self.trades.append(
@@ -115,9 +123,13 @@ class Backtester:
                 type="long",
                 entry_price=self.entry_price,
                 exit_price=exit_price,
-                quantity=self.last_order.quantity,
+                quantity=float(self.last_order.quantity),
                 pnl=trade_pnl,
-                entry_timestamp=sh.timestamp_to_arrow(self.last_timestamp).datetime,
+                entry_timestamp=(
+                    sh.timestamp_to_arrow(int(self.last_timestamp)).datetime
+                    if self.last_timestamp
+                    else sh.timestamp_to_arrow(int(candle["timestamp"])).datetime
+                ),
                 exit_timestamp=sh.timestamp_to_arrow(int(candle["timestamp"])).datetime,
             )
         )
@@ -125,7 +137,7 @@ class Backtester:
 
     def enter_short(self, order: Order, candle: npt.NDArray) -> None:
         self.position = "short"
-        self.entry_price = order.price
+        self.entry_price = float(order.price)
         self.stop_loss = order.stop_loss
         self.take_profit = order.take_profit
         # self.balance += order.price * order.quantity
@@ -133,8 +145,10 @@ class Backtester:
         self.last_timestamp = int(candle["timestamp"])
 
     def exit_short(self, candle: npt.NDArray) -> None:
+        if self.last_order is None:
+            return
         exit_price = float(candle["close"])
-        trade_pnl = (self.entry_price - exit_price) * self.last_order.quantity
+        trade_pnl = (self.entry_price - exit_price) * float(self.last_order.quantity)
         self.pnl += trade_pnl
         self.balance -= trade_pnl  # exit_price * self.last_order.quantity
         self.trades.append(
@@ -142,9 +156,13 @@ class Backtester:
                 type="short",
                 entry_price=self.entry_price,
                 exit_price=exit_price,
-                quantity=self.last_order.quantity,
+                quantity=float(self.last_order.quantity),
                 pnl=trade_pnl,
-                entry_timestamp=sh.timestamp_to_arrow(self.last_timestamp).datetime,
+                entry_timestamp=(
+                    sh.timestamp_to_arrow(int(self.last_timestamp)).datetime
+                    if self.last_timestamp
+                    else sh.timestamp_to_arrow(int(candle["timestamp"])).datetime
+                ),
                 exit_timestamp=sh.timestamp_to_arrow(int(candle["timestamp"])).datetime,
             )
         )
@@ -152,14 +170,16 @@ class Backtester:
     def should_exit_position(self, candle: npt.NDArray) -> bool:
         should_exit = False
         if self.position == "long":
-            if self.stop_loss and float(candle["close"]) <= self.stop_loss:
+            price = float(candle["close"])
+            if self.stop_loss is not None and price <= self.stop_loss:
                 should_exit = True
-            elif self.take_profit and float(candle["close"]) >= self.take_profit:
+            elif self.take_profit is not None and price >= self.take_profit:
                 should_exit = True
         elif self.position == "short":
-            if self.stop_loss and float(candle["close"]) >= self.stop_loss:
+            price = float(candle["close"])
+            if self.stop_loss is not None and price >= self.stop_loss:
                 should_exit = True
-            elif self.take_profit and float(candle["close"]) <= self.take_profit:
+            elif self.take_profit is not None and price <= self.take_profit:
                 should_exit = True
         if self.strategy.should_cancel_entry():
             should_exit = True

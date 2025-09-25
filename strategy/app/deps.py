@@ -1,4 +1,4 @@
-from typing import Annotated, Generator
+from typing import Annotated, AsyncGenerator
 
 from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -8,7 +8,7 @@ from strategy.db.base import AsyncSessionLocal
 __all__ = ["SessionDep"]
 
 
-async def get_db() -> Generator:
+async def get_db() -> AsyncGenerator[AsyncSession, None]:
     async with AsyncSessionLocal() as session:
         yield session
 
