@@ -1,4 +1,5 @@
 import numpy as np
+import pytest
 
 import strategy.utils.helpers as sh
 from strategy.db.candle import Candle
@@ -41,11 +42,8 @@ def test_to_numpy_array_and_to_structured_array():
 
 def test_to_structured_array_invalid_shape_raises():
     bad = np.array([[1, 2], [3, 4]])
-    try:
+    with pytest.raises(ValueError):
         sh.to_structured_array(bad)
-        raise AssertionError("Expected ValueError")
-    except ValueError:
-        pass
 
 
 def test_to_candle_from_struct_row_and_positional():
