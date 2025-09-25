@@ -3,37 +3,29 @@ from abc import ABC, abstractmethod
 
 class Exchange(ABC):
     @abstractmethod
-    def market_order(self, symbol: str, qty: float, current_price: float, side: str, reduce_only: bool) -> str:
-        """
-        Returns the order ID
-        """
-        pass
+    async def market_order(self, symbol: str, qty: float, current_price: float, side: str, reduce_only: bool) -> str:
+        """Creates a market order and returns the order ID"""
 
     @abstractmethod
-    def limit_order(self, symbol: str, qty: float, price: float, side: str, reduce_only: bool) -> str:
-        """
-        Returns the order ID
-        """
-        pass
+    async def limit_order(self, symbol: str, qty: float, price: float, side: str, reduce_only: bool) -> str:
+        """Creates a limit order and returns the order ID"""
 
     @abstractmethod
-    def stop_order(self, symbol: str, qty: float, price: float, side: str, reduce_only: bool) -> str:
-        """
-        Returns the order ID
-        """
+    async def stop_order(self, symbol: str, qty: float, price: float, side: str, reduce_only: bool) -> str:
+        """Creates a stop order and returns the order id"""
 
     @abstractmethod
-    def cancel_all_orders(self, symbol: str) -> None:
-        pass
+    async def cancel_all_orders(self, symbol: str) -> None:
+        """Cancels all orders for the given symbol"""
 
     @abstractmethod
-    def cancel_order(self, symbol: str, order_id: str) -> None:
-        pass
+    async def cancel_order(self, symbol: str, order_id: str) -> None:
+        """Cancels an order"""
 
     @abstractmethod
-    def get_balance(self) -> float:
-        pass
+    async def get_balance(self) -> float:
+        """Gets the account balance"""
 
     @abstractmethod
-    def _fetch_precisions(self) -> None:
-        pass
+    async def _fetch_precisions(self) -> None:
+        """Gets the precisions of orders"""

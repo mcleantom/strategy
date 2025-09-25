@@ -20,7 +20,6 @@ version = "0.0.1dev0"
 dependencies = [
     "sqlalchemy[asyncio]",
     "arrow",
-    "requests",
     "pydash",
     "alembic",
     "psycopg2",
@@ -37,13 +36,7 @@ dependencies = [
     "click>=8.1.8",
     "quantstats>=0.0.77",
     "ipython>=9.5.0",
-]
-
-[project.optional-dependencies]
-dev = [
-    "pytest",
-    "pytest-cov",
-    "coverage[toml]",
+    "aiohttp>=3.12.15",
 ]
 
 [tool.setuptools.dynamic]
@@ -102,6 +95,8 @@ section-order = [
 [tool.pytest.ini_options]
 addopts = "--cov=strategy --cov-report=term-missing:skip-covered --cov-report=html"
 testpaths = ["tests"]
+asyncio_mode = "auto"
+
 
 [tool.coverage.run]
 branch = true
@@ -110,7 +105,6 @@ omit = [
   "alembic/*",
   "strategy/app/*",
   "strategy/db/backtest.py",
-  "strategy/exchange/*",
   "strategy/modes/import_candles_mode/*",
   "strategy/indicators/*",
   "strategy/strategies/*.py",
@@ -120,3 +114,11 @@ omit = [
 show_missing = true
 skip_covered = true
 fail_under = 0
+
+[dependency-groups]
+dev = [
+    "aioresponses>=0.7.8",
+    "pytest>=8.4.2",
+    "pytest-asyncio>=1.2.0",
+    "pytest-cov>=7.0.0",
+]

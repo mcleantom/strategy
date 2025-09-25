@@ -1,19 +1,70 @@
-import requests
+# strategy/exchange/alpaca_exchange.py
+import os
+from typing import Any, Dict, List, Optional
+
+import aiohttp
 
 from .base_exchange import Exchange
 
 
 class AlpacaExchange(Exchange):
-    def __init__(self):
-        self.base_url = "https://paper-api.alpaca.markets/v2"
-        self.api_key = "PKXVNOY1VHW9APDIWRCG"  # os.environ["APCA_API_KEY_ID"]
-        self.api_secret = "cRCaefbUDkeYIhubIAtqt7H2cUXbNifeqPMXhaid"  # os.environ["APCA_API_SECRET_KEY"]
-        self.headers = {
+    def __init__(
+        self,
+        *,
+        session: Optional[aiohttp.ClientSession] = None,
+        base_url: str = "https://paper-api.alpaca.markets/v2",
+        api_key: Optional[str] = None,
+        api_secret: Optional[str] = None,
+    ):
+        self.base_url = base_url.rstrip("/")
+        self.api_key = api_key or os.environ.get("ALPACA_KEY")
+        self.api_secret = api_secret or os.environ.get("ALPACA_SECRET")
+        if not self.api_key or not self.api_secret:
+            raise RuntimeError("ALPACA_KEY and ALPACA_SECRET must be set or passed in.")
+        self._session = session
+        self._owns_session = session is None
+        self._headers = {
             "APCA-API-KEY-ID": self.api_key,
             "APCA-API-SECRET-KEY": self.api_secret,
         }
 
-    def market_order(self, symbol: str, qty: float, current_price: float, side: str, reduce_only: bool) -> str:
+    # ---- lifecycle ---------------------------------------------------------
+    async def __aenter__(self):
+        if self._session is None:
+            self._session = aiohttp.ClientSession(headers=self._headers)
+            self._owns_session = True
+        return self
+
+    async def __aexit__(self, exc_type, exc, tb):
+        if self._owns_session and self._session:
+            await self._session.close()
+        self._session = None
+
+    @property
+    def session(self) -> aiohttp.ClientSession:  # pragma: no cover
+        if self._session is None:
+            self._session = aiohttp.ClientSession(headers=self._headers)
+            self._owns_session = True
+        return self._session
+
+    async def _request(self, method: str, path: str, **kwargs) -> Any:
+        url = f"{self.base_url}{path}"
+        async with self.session.request(method, url, **kwargs) as resp:
+            if resp.status >= 400:
+                body = await resp.text()
+                try:
+                    resp.raise_for_status()
+                except aiohttp.ClientResponseError as e:
+                    raise aiohttp.ClientResponseError(
+                        request_info=e.request_info,
+                        history=e.history,
+                        status=e.status,
+                        message=f"{e.message}; body={body}",
+                        headers=e.headers,
+                    ) from e
+            return await resp.json()
+
+    async def market_order(self, symbol: str, qty: float, current_price: float, side: str, reduce_only: bool) -> str:
         order_data = {
             "symbol": symbol,
             "qty": qty,
@@ -22,11 +73,10 @@ class AlpacaExchange(Exchange):
             "time_in_force": "gtc",
             "reduce_only": reduce_only,
         }
-        response = requests.post(f"{self.base_url}/orders", json=order_data, headers=self.headers)
-        response.raise_for_status()
-        return response.json()["id"]
+        data = await self._request("POST", "/orders", json=order_data)
+        return data["id"]
 
-    def limit_order(self, symbol: str, qty: float, price: float, side: str, reduce_only: bool) -> str:
+    async def limit_order(self, symbol: str, qty: float, price: float, side: str, reduce_only: bool) -> str:
         order_data = {
             "symbol": symbol,
             "qty": qty,
@@ -36,11 +86,10 @@ class AlpacaExchange(Exchange):
             "time_in_force": "gtc",
             "reduce_only": reduce_only,
         }
-        response = requests.post(f"{self.base_url}/orders", json=order_data, headers=self.headers)
-        response.raise_for_status()
-        return response.json()["id"]
+        data = await self._request("POST", "/orders", json=order_data)
+        return data["id"]
 
-    def stop_order(self, symbol: str, qty: float, price: float, side: str, reduce_only: bool) -> str:
+    async def stop_order(self, symbol: str, qty: float, price: float, side: str, reduce_only: bool) -> str:
         order_data = {
             "symbol": symbol,
             "qty": qty,
@@ -50,29 +99,20 @@ class AlpacaExchange(Exchange):
             "time_in_force": "gtc",
             "reduce_only": reduce_only,
         }
-        response = requests.post(f"{self.base_url}/orders", json=order_data, headers=self.headers)
-        response.raise_for_status()
-        return response.json()["id"]
+        data = await self._request("POST", "/orders", json=order_data)
+        return data["id"]
 
-    def cancel_all_orders(self, symbol: str) -> None:
-        response = requests.get(f"{self.base_url}/orders", json={"symbols": [symbol]}, headers=self.headers)
-        response.raise_for_status()
-        orders = response.json()
+    async def cancel_all_orders(self, symbol: str) -> None:
+        orders: List[Dict[str, Any]] = await self._request("GET", "/orders", json={"symbols": [symbol]})
         for order in orders:
-            self.cancel_order(symbol, order["id"])
+            await self.cancel_order(symbol, order["id"])
 
-    def cancel_order(self, symbol: str, order_id: str) -> None:
-        response = requests.delete(f"{self.base_url}/orders/{order_id}", headers=self.headers)
-        response.raise_for_status()
+    async def cancel_order(self, symbol: str, order_id: str) -> None:
+        await self._request("DELETE", f"/orders/{order_id}")
 
-    def get_balance(self) -> float:
-        response = requests.get(f"{self.base_url}/account", headers=self.headers)
-        response.raise_for_status()
-        account_data = response.json()
+    async def get_balance(self) -> float:
+        account_data = await self._request("GET", "/account")
         return float(account_data["equity"])
 
-    def _fetch_precisions(self) -> None:
-        response = requests.get(f"{self.base_url}/assets", headers=self.headers)
-        response.raise_for_status()
-        assets = response.json()
-        return assets
+    async def _fetch_precisions(self):
+        return await self._request("GET", "/assets")
