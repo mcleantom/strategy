@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 test_candles_2 = [
     (1575547200000, 146.51, 147.03, 149.02, 146.51, 64788.46651),
     (1575561600000, 147.02, 147.6, 147.97, 146.3, 35810.46053),
@@ -5137,7 +5139,7 @@ test_candles_btc = [
 ]
 
 # sample prices include 240 2h candles from BTCUSDT traded on
-# Binance in "29 June 2021 10:00:00 - 19 July 2021 08:00:00"
+# Binance in "29 June 2021 10:00:00 - 19 July 2021 08:00:00"  # noqa: ERA001
 # Order: epoch + OHLCV!
 wavetrend_candles = [
     (1624960800000, 35226.26, 35768.9, 35041.93, 35555.62, 10484.391673),

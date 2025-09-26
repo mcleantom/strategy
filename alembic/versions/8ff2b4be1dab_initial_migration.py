@@ -6,9 +6,11 @@ Create Date: 2024-09-19 16:05:56.905920
 
 """
 
-from alembic import op
+from __future__ import annotations
+
 import sqlalchemy as sa
 
+from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "8ff2b4be1dab"
@@ -32,7 +34,13 @@ def upgrade() -> None:
         sa.Column("symbol", sa.String(), nullable=True),
         sa.Column("timeframe", sa.String(), nullable=True),
         sa.PrimaryKeyConstraint("id"),
-        sa.UniqueConstraint("exchange", "symbol", "timeframe", "timestamp", name="unique_candle_constraint"),
+        sa.UniqueConstraint(
+            "exchange",
+            "symbol",
+            "timeframe",
+            "timestamp",
+            name="unique_candle_constraint",
+        ),
     )
     op.create_index(op.f("ix_candles_exchange"), "candles", ["exchange"], unique=False)
     op.create_index(op.f("ix_candles_symbol"), "candles", ["symbol"], unique=False)

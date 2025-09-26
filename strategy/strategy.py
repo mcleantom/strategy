@@ -1,14 +1,20 @@
+from __future__ import annotations
+
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-
-import numpy.typing as npt
+from typing import TYPE_CHECKING
 
 from strategy.models.position import Position, PositionType
 from strategy.store.store import Store
 
+if TYPE_CHECKING:
+    import numpy.typing as npt
+
 
 @dataclass
 class Order:
+    """Order model."""
+
     quantity: float
     price: float
     take_profit: float | None = None
@@ -16,6 +22,8 @@ class Order:
 
 
 class Strategy(ABC):
+    """Base class for strategies."""
+
     def __init__(self, store: Store | None = None):
         self.store = store if store else Store()
         self.name = None
@@ -36,23 +44,23 @@ class Strategy(ABC):
 
     @abstractmethod
     def go_long(self) -> Order:
-        """Returns the long order"""
+        """Returns the long order."""
 
     @abstractmethod
     def go_short(self) -> Order:
-        """Returns the short order"""
+        """Returns the short order."""
 
     @abstractmethod
     def should_long(self) -> bool:
-        """Returns if the strategy should make a long order"""
+        """Returns if the strategy should make a long order."""
 
     @abstractmethod
     def should_short(self) -> bool:
-        """Returns if the strategy should make a short order"""
+        """Returns if the strategy should make a short order."""
 
     @abstractmethod
     def should_cancel_entry(self) -> bool:
-        """Returns if the strategy should cancel the order"""
+        """Returns if the strategy should cancel the order."""
 
     @property
     def available_margin(self) -> float:

@@ -1,8 +1,10 @@
-from .acosc import acosc
-from .ad import ad
-from .adosc import adosc
-from .adx import adx
-from .adxr import adxr
-from .alligator import alligator
-from .atr import atr
-from .ema import ema
+from __future__ import annotations
+
+from .acosc import acosc as acosc
+from .ad import ad as ad
+from .adosc import adosc as adosc
+from .adx import adx as adx
+from .adxr import adxr as adxr
+from .alligator import alligator as alligator
+from .atr import atr as atr
+from .ema import ema as ema

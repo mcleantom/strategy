@@ -12,29 +12,44 @@ class EquityCurveModel(Base):
     __tablename__ = "equity_curve"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
-    backtest_result_id: Mapped[int] = mapped_column(Integer, ForeignKey("backtest_results.id", ondelete="CASCADE"))
+    backtest_result_id: Mapped[int] = mapped_column(
+        Integer,
+        ForeignKey("backtest_results.id", ondelete="CASCADE"),
+    )
     timestamp: Mapped[DateTime] = mapped_column(DateTime, nullable=False)
     value: Mapped[float] = mapped_column(Float, nullable=False)
 
-    backtest_result: Mapped[BacktestResultModel] = relationship("BacktestResultModel", back_populates="equity_curve")
+    backtest_result: Mapped[BacktestResultModel] = relationship(
+        "BacktestResultModel",
+        back_populates="equity_curve",
+    )
 
 
 class BaselineCurveModel(Base):
     __tablename__ = "baseline_curve"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
-    backtest_result_id: Mapped[int] = mapped_column(Integer, ForeignKey("backtest_results.id", ondelete="CASCADE"))
+    backtest_result_id: Mapped[int] = mapped_column(
+        Integer,
+        ForeignKey("backtest_results.id", ondelete="CASCADE"),
+    )
     timestamp: Mapped[DateTime] = mapped_column(DateTime, nullable=False)
     value: Mapped[float] = mapped_column(Float, nullable=False)
 
-    backtest_result: Mapped[BacktestResultModel] = relationship("BacktestResultModel", back_populates="baseline_curve")
+    backtest_result: Mapped[BacktestResultModel] = relationship(
+        "BacktestResultModel",
+        back_populates="baseline_curve",
+    )
 
 
 class PerformanceMetricsModel(Base):
     __tablename__ = "performance_metrics"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
-    backtest_result_id: Mapped[int] = mapped_column(Integer, ForeignKey("backtest_results.id", ondelete="CASCADE"))
+    backtest_result_id: Mapped[int] = mapped_column(
+        Integer,
+        ForeignKey("backtest_results.id", ondelete="CASCADE"),
+    )
     pnl: Mapped[float] = mapped_column(Float, nullable=False)
     win_rate: Mapped[float] = mapped_column(Float, nullable=False)
     sharpe_ratio: Mapped[float] = mapped_column(Float, nullable=True)
@@ -47,7 +62,8 @@ class PerformanceMetricsModel(Base):
     average_loss: Mapped[float] = mapped_column(Float, nullable=True)
 
     backtest_result: Mapped[BacktestResultModel] = relationship(
-        "BacktestResultModel", back_populates="performance_metrics"
+        "BacktestResultModel",
+        back_populates="performance_metrics",
     )
 
 
@@ -55,7 +71,10 @@ class RiskMetricsModel(Base):
     __tablename__ = "risk_metrics"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
-    backtest_result_id: Mapped[int] = mapped_column(Integer, ForeignKey("backtest_results.id", ondelete="CASCADE"))
+    backtest_result_id: Mapped[int] = mapped_column(
+        Integer,
+        ForeignKey("backtest_results.id", ondelete="CASCADE"),
+    )
     total_losing_streak: Mapped[int] = mapped_column(Integer, nullable=False)
     largest_losing_trade: Mapped[float] = mapped_column(Float, nullable=False)
     largest_winning_trade: Mapped[float] = mapped_column(Float, nullable=False)
@@ -68,14 +87,20 @@ class RiskMetricsModel(Base):
     gross_loss: Mapped[float] = mapped_column(Float, nullable=False)
     max_drawdown: Mapped[float] = mapped_column(Float, nullable=False)
 
-    backtest_result: Mapped[BacktestResultModel] = relationship("BacktestResultModel", back_populates="risk_metrics")
+    backtest_result: Mapped[BacktestResultModel] = relationship(
+        "BacktestResultModel",
+        back_populates="risk_metrics",
+    )
 
 
 class TradeMetricsModel(Base):
     __tablename__ = "trade_metrics"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
-    backtest_result_id: Mapped[int] = mapped_column(Integer, ForeignKey("backtest_results.id", ondelete="CASCADE"))
+    backtest_result_id: Mapped[int] = mapped_column(
+        Integer,
+        ForeignKey("backtest_results.id", ondelete="CASCADE"),
+    )
     total_trades: Mapped[int] = mapped_column(Integer, nullable=False)
     total_winning_trades: Mapped[int] = mapped_column(Integer, nullable=False)
     total_losing_trades: Mapped[int] = mapped_column(Integer, nullable=False)
@@ -89,7 +114,10 @@ class TradeMetricsModel(Base):
     total_open_trades: Mapped[int] = mapped_column(Integer, nullable=False)
     open_pl: Mapped[float] = mapped_column(Float, nullable=False)
 
-    backtest_result: Mapped[BacktestResultModel] = relationship("BacktestResultModel", back_populates="trade_metrics")
+    backtest_result: Mapped[BacktestResultModel] = relationship(
+        "BacktestResultModel",
+        back_populates="trade_metrics",
+    )
 
 
 class BacktestResultModel(Base):
@@ -101,21 +129,38 @@ class BacktestResultModel(Base):
     end_balance: Mapped[float] = mapped_column(Float, nullable=False)
     start_time: Mapped[DateTime] = mapped_column(DateTime, nullable=False)
     end_time: Mapped[DateTime] = mapped_column(DateTime, nullable=False)
-    date_created: Mapped[DateTime] = mapped_column(DateTime, nullable=False, default=datetime.utcnow)
+    date_created: Mapped[DateTime] = mapped_column(
+        DateTime,
+        nullable=False,
+        default=datetime.utcnow,
+    )
 
     # Relationships
     equity_curve: Mapped[list[EquityCurveModel]] = relationship(
-        EquityCurveModel, back_populates="backtest_result", cascade="all, delete-orphan"
+        EquityCurveModel,
+        back_populates="backtest_result",
+        cascade="all, delete-orphan",
     )
     baseline_curve: Mapped[list[BaselineCurveModel]] = relationship(
-        BaselineCurveModel, back_populates="backtest_result", cascade="all, delete-orphan"
+        BaselineCurveModel,
+        back_populates="backtest_result",
+        cascade="all, delete-orphan",
     )
     performance_metrics: Mapped[PerformanceMetricsModel] = relationship(
-        PerformanceMetricsModel, back_populates="backtest_result", cascade="all, delete-orphan", uselist=False
+        PerformanceMetricsModel,
+        back_populates="backtest_result",
+        cascade="all, delete-orphan",
+        uselist=False,
     )
     risk_metrics: Mapped[RiskMetricsModel] = relationship(
-        RiskMetricsModel, back_populates="backtest_result", cascade="all, delete-orphan", uselist=False
+        RiskMetricsModel,
+        back_populates="backtest_result",
+        cascade="all, delete-orphan",
+        uselist=False,
     )
     trade_metrics: Mapped[TradeMetricsModel] = relationship(
-        TradeMetricsModel, back_populates="backtest_result", cascade="all, delete-orphan", uselist=False
+        TradeMetricsModel,
+        back_populates="backtest_result",
+        cascade="all, delete-orphan",
+        uselist=False,
     )

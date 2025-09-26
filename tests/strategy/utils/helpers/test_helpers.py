@@ -1,14 +1,17 @@
+from __future__ import annotations
+
 import numpy as np
 import pytest
 
 import strategy.utils.helpers as sh
-from strategy.db.candle import Candle
+from strategy.db.candle import CandleModel
 
 
 def test_generate_unique_id_unique_and_string():
     a = sh.generate_unique_id()
     b = sh.generate_unique_id()
-    assert isinstance(a, str) and isinstance(b, str)
+    assert isinstance(a, str)
+    assert isinstance(b, str)
     assert a != b
 
 
@@ -28,16 +31,19 @@ def test_date_diff_in_days_abs():
 
 def test_to_numpy_array_and_to_structured_array():
     candles = [
-        Candle(timestamp=1, open=10, close=11, high=12, low=9, volume=100),
-        Candle(timestamp=2, open=11, close=12, high=13, low=10, volume=110),
+        CandleModel(timestamp=1, open=10, close=11, high=12, low=9, volume=100),
+        CandleModel(timestamp=2, open=11, close=12, high=13, low=10, volume=110),
     ]
     arr = sh.to_numpy_array(candles)
     assert arr.dtype.names == ("timestamp", "open", "close", "high", "low", "volume")
     # to_structured_array expects (n,6) ndarray of floats/ints
-    dense = np.array([[1, 10.0, 11.0, 12.0, 9.0, 100.0], [2, 11.0, 12.0, 13.0, 10.0, 110.0]])
+    dense = np.array(
+        [[1, 10.0, 11.0, 12.0, 9.0, 100.0], [2, 11.0, 12.0, 13.0, 10.0, 110.0]],
+    )
     struct = sh.to_structured_array(dense)
     assert struct.dtype.names == arr.dtype.names
-    assert struct[0]["open"] == 10.0 and struct[1]["close"] == 12.0
+    assert struct[0]["open"] == 10.0
+    assert struct[1]["close"] == 12.0
 
 
 def test_to_structured_array_invalid_shape_raises():
@@ -47,21 +53,39 @@ def test_to_structured_array_invalid_shape_raises():
 
 
 def test_to_candle_from_struct_row_and_positional():
-    struct = np.zeros(1, dtype=[("open", "f8"), ("close", "f8"), ("high", "f8"), ("low", "f8"), ("volume", "f8")])
+    struct = np.zeros(
+        1,
+        dtype=[
+            ("open", "f8"),
+            ("close", "f8"),
+            ("high", "f8"),
+            ("low", "f8"),
+            ("volume", "f8"),
+        ],
+    )
     struct[0] = (10.0, 11.0, 12.0, 9.0, 100.0)
     c1 = sh.to_candle(struct[0])
-    assert isinstance(c1, Candle)
-    assert c1.open == 10.0 and c1.close == 11.0
+    assert isinstance(c1, CandleModel)
+    assert c1.open == 10.0
+    assert c1.close == 11.0
     # positional row fallback
     c2 = sh.to_candle([10.0, 11.0, 12.0, 9.0, 100.0])
-    assert c2.high == 12.0 and c2.low == 9.0
+    assert c2.high == 12.0
+    assert c2.low == 9.0
 
 
 def test_slice_candles_and_np_shift():
     # slice_candles
     arr = np.zeros(
         500,
-        dtype=[("timestamp", "i8"), ("open", "f8"), ("close", "f8"), ("high", "f8"), ("low", "f8"), ("volume", "f8")],
+        dtype=[
+            ("timestamp", "i8"),
+            ("open", "f8"),
+            ("close", "f8"),
+            ("high", "f8"),
+            ("low", "f8"),
+            ("volume", "f8"),
+        ],
     )
     sliced = sh.slice_candles(arr, sequential=False)
     assert len(sliced) == 240

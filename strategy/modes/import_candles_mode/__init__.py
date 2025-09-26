@@ -1,5 +1,7 @@
+from __future__ import annotations
+
 import time
-from typing import Any, Callable, Dict, List, Union
+from typing import TYPE_CHECKING, Any
 
 import arrow
 import numpy as np
@@ -11,10 +13,8 @@ from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.future import select
 
 from strategy.db.base import SessionLocal
-from strategy.db.candle import Candle
-from strategy.models.enums import ETimeframe
+from strategy.db.candle import CandleModel
 from strategy.modes.import_candles_mode.drivers.alpaca_importer import AlpacaImporter
-from strategy.modes.import_candles_mode.drivers.base_candles_importer import CandlesImporter
 from strategy.utils.helpers import (
     arrow_to_timestamp,
     date_diff_in_days,
@@ -22,13 +22,28 @@ from strategy.utils.helpers import (
     now_to_timestamp,
     timestamp_to_arrow,
     timestamp_to_time,
-    to_structured_array,
 )
 
-CANDLE_DRIVERS: dict[str, Callable[[], CandlesImporter]] = {"alpaca": lambda: AlpacaImporter()}
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from strategy.models.enums import ETimeframe
+    from strategy.modes.import_candles_mode.drivers.base_candles_importer import (
+        CandlesImporter,
+    )
+
+CANDLE_DRIVERS: dict[str, Callable[[], CandlesImporter]] = {
+    "alpaca": lambda: AlpacaImporter(),
+}
 
 
-def run(client_id: str, exchange: str, symbol: str, start_date_str: str, mode: str = "candles"):
+def run(  # noqa: C901
+    client_id: str,
+    exchange: str,
+    symbol: str,
+    start_date_str: str,
+    mode: str = "candles",
+):
     today = arrow_to_timestamp(arrow.utcnow().floor("day"))
     start_timestamp = arrow_to_timestamp(arrow.get(start_date_str, "YYYY-MM-DD"))
     if start_timestamp == today or start_timestamp > today:
@@ -52,12 +67,12 @@ def run(client_id: str, exchange: str, symbol: str, start_date_str: str, mode: s
             break
 
         count = (
-            session.query(Candle)
+            session.query(CandleModel)
             .filter(
-                Candle.exchange == exchange,
-                Candle.symbol == symbol,
-                or_(Candle.timeframe == "1m", Candle.timeframe.is_(None)),
-                Candle.timestamp.between(temp_start_timestamp, temp_end_timestamp),
+                CandleModel.exchange == exchange,
+                CandleModel.symbol == symbol,
+                or_(CandleModel.timeframe == "1m", CandleModel.timeframe.is_(None)),
+                CandleModel.timestamp.between(temp_start_timestamp, temp_end_timestamp),
             )
             .count()
         )
@@ -65,27 +80,49 @@ def run(client_id: str, exchange: str, symbol: str, start_date_str: str, mode: s
 
         if not already_exists:
             if temp_end_timestamp > now_to_timestamp():
-                temp_end_timestamp = arrow.utcnow().floor("minute").int_timestamp * 1000 - 60_000
+                temp_end_timestamp = (
+                    arrow.utcnow().floor("minute").int_timestamp * 1000 - 60_000
+                )
 
             candles = driver.fetch(symbol, temp_start_timestamp, "1m")
 
-            time_diff = int((candles[0]["timestamp"] - temp_start_timestamp) / 1000) if len(candles) else 0
+            time_diff = (
+                int((candles[0]["timestamp"] - temp_start_timestamp) / 1000)
+                if len(candles)
+                else 0
+            )
             if not len(candles) or time_diff < 0 or time_diff > 60 * 100:
                 first_existing_timestamp = driver.get_starting_time(symbol)
 
                 if first_existing_timestamp is None:
-                    raise ValueError(f"No candles exist for the market for time {first_existing_timestamp}")
+                    raise ValueError(
+                        f"No candles exist for the market for time {first_existing_timestamp}",
+                    )
 
                 if temp_end_timestamp > first_existing_timestamp:
                     if driver.backup_exchange is not None:
                         candles = _get_candles_from_backup_exchange(
-                            exchange, driver.backup_exchange, symbol, temp_start_timestamp, temp_end_timestamp
+                            exchange,
+                            driver.backup_exchange,
+                            symbol,
+                            temp_start_timestamp,
+                            temp_end_timestamp,
                         )
                 else:
-                    run(client_id, exchange, symbol, timestamp_to_time(first_existing_timestamp)[:10], mode)
+                    run(
+                        client_id,
+                        exchange,
+                        symbol,
+                        timestamp_to_time(first_existing_timestamp)[:10],
+                        mode,
+                    )
                     return
 
-            candles = _fill_absent_candles(candles, temp_start_timestamp, temp_end_timestamp)
+            candles = _fill_absent_candles(
+                candles,
+                temp_start_timestamp,
+                temp_end_timestamp,
+            )
             store_candles_list(candles)
 
         start_date = start_date.shift(minutes=driver.count)
@@ -95,26 +132,37 @@ def run(client_id: str, exchange: str, symbol: str, start_date_str: str, mode: s
 
 
 def _get_candles_from_backup_exchange(
-    exchange: str, backup_driver: CandlesImporter, symbol: str, start_timestamp: int, end_timestamp: int
-) -> list[dict[str, Union[str, Any]]]:
+    exchange: str,
+    backup_driver: CandlesImporter,
+    symbol: str,
+    start_timestamp: int,
+    end_timestamp: int,
+) -> list[dict[str, str | Any]]:
     timeframe = "1m"
-    total_candles: list[dict[str, Union[str, Any]]] = []
+    total_candles: list[dict[str, str | Any]] = []
     session = SessionLocal()
     statement = (
-        select(Candle.timestamp, Candle.open, Candle.close, Candle.high, Candle.low, Candle.volume)
-        .where(
-            Candle.exchange == backup_driver.name,
-            Candle.symbol == symbol,
-            Candle.timeframe == timeframe,
-            Candle.timestamp.between(start_timestamp, end_timestamp),
+        select(
+            CandleModel.timestamp,
+            CandleModel.open,
+            CandleModel.close,
+            CandleModel.high,
+            CandleModel.low,
+            CandleModel.volume,
         )
-        .order_by(asc(Candle.timestamp))
+        .where(
+            CandleModel.exchange == backup_driver.name,
+            CandleModel.symbol == symbol,
+            CandleModel.timeframe == timeframe,
+            CandleModel.timestamp.between(start_timestamp, end_timestamp),
+        )
+        .order_by(asc(CandleModel.timestamp))
     )
     backup_candles = session.execute(statement)
     already_exists = len(backup_candles) == (end_timestamp - start_timestamp) / 60_000 + 1
     if already_exists:
-        for c in backup_candles:
-            total_candles.append(
+        total_candles.extend(
+            [
                 {
                     "id": generate_unique_id(),
                     "exchange": exchange,
@@ -127,25 +175,31 @@ def _get_candles_from_backup_exchange(
                     "low": c[4],
                     "volume": c[5],
                 }
-            )
-
+                for c in backup_candles
+            ],
+        )
         return total_candles
 
-    raise NotImplementedError()
+    raise NotImplementedError
 
 
 def _fill_absent_candles(
-    temp_candles: List[Dict[str, Union[str, Any]]], start_timestamp: int, end_timestamp: int
-) -> List[Dict[str, Union[str, Any]]]:
+    temp_candles: list[dict[str, str | Any]],
+    start_timestamp: int,
+    end_timestamp: int,
+) -> list[dict[str, str | Any]]:
     symbol = temp_candles[0]["symbol"]
     exchange = temp_candles[0]["exchange"]
-    candles: list[Dict[str, Union[str, Any]]] = []
+    candles: list[dict[str, str | Any]] = []
     first_candle = temp_candles[0]
     started = False
     loop_length = ((end_timestamp - start_timestamp) / 60_000) + 1
 
     for _ in range(int(loop_length)):
-        candle_for_timestamp = pydash.find(temp_candles, lambda c: c["timestamp"] == start_timestamp)
+        candle_for_timestamp = pydash.find(
+            temp_candles,
+            lambda c, timestamp=start_timestamp: c["timestamp"] == timestamp,
+        )
 
         if candle_for_timestamp is None:
             if started:
@@ -162,7 +216,7 @@ def _fill_absent_candles(
                         "low": last_close,
                         "close": last_close,
                         "volume": 0,
-                    }
+                    },
                 )
             else:
                 candles.append(
@@ -177,7 +231,7 @@ def _fill_absent_candles(
                         "low": first_candle["open"],
                         "close": first_candle["open"],
                         "volume": 0,
-                    }
+                    },
                 )
         else:
             started = True
@@ -190,21 +244,26 @@ def _fill_absent_candles(
 def store_candles_list(candles: list[dict]) -> None:
     logger.info(
         f"Saving candles from {timestamp_to_time(candles[0]['timestamp'])} "
-        + f"to {timestamp_to_time(candles[-1]['timestamp'])}"
+        f"to {timestamp_to_time(candles[-1]['timestamp'])}",
     )
 
     for c in candles:
         if "timeframe" not in c:
             raise ValueError("Candle has no timeframe")
 
-    stmt = insert(Candle).values(candles)
-    stmt = stmt.on_conflict_do_nothing(index_elements=["exchange", "symbol", "timeframe", "timestamp"])
+    stmt = insert(CandleModel).values(candles)
+    stmt = stmt.on_conflict_do_nothing(
+        index_elements=["exchange", "symbol", "timeframe", "timestamp"],
+    )
     db = SessionLocal()
     db.execute(stmt)
     db.commit()
 
 
-def generate_candles_from_one_minute_candles(candles: npt.NDArray, timeframe: ETimeframe) -> npt.NDArray:
+def generate_candles_from_one_minute_candles(
+    candles: npt.NDArray,
+    timeframe: ETimeframe,
+) -> npt.NDArray:
     generated_candles: list[tuple] = []
     num = timeframe.to_minutes()
     for i in range(len(candles)):
@@ -223,4 +282,9 @@ def generate_candles_from_one_minute_candles(candles: npt.NDArray, timeframe: ET
 
 
 if __name__ == "__main__":
-    run(client_id="some_client_id", exchange="alpaca", symbol="AAPL", start_date_str="2016-08-01")
+    run(
+        client_id="some_client_id",
+        exchange="alpaca",
+        symbol="AAPL",
+        start_date_str="2016-08-01",
+    )

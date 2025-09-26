@@ -1,6 +1,9 @@
 # strategy/exchange/alpaca_exchange.py
+from __future__ import annotations
+
 import os
-from typing import Any, Dict, List, Optional
+from http import HTTPStatus
+from typing import Any
 
 import aiohttp
 
@@ -11,10 +14,10 @@ class AlpacaExchange(Exchange):
     def __init__(
         self,
         *,
-        session: Optional[aiohttp.ClientSession] = None,
+        session: aiohttp.ClientSession | None = None,
         base_url: str = "https://paper-api.alpaca.markets/v2",
-        api_key: Optional[str] = None,
-        api_secret: Optional[str] = None,
+        api_key: str | None = None,
+        api_secret: str | None = None,
     ):
         self.base_url = base_url.rstrip("/")
         self.api_key = api_key or os.environ.get("ALPACA_KEY")
@@ -50,7 +53,7 @@ class AlpacaExchange(Exchange):
     async def _request(self, method: str, path: str, **kwargs) -> Any:
         url = f"{self.base_url}{path}"
         async with self.session.request(method, url, **kwargs) as resp:
-            if resp.status >= 400:
+            if resp.status >= HTTPStatus.BAD_REQUEST:
                 body = await resp.text()
                 try:
                     resp.raise_for_status()
@@ -64,7 +67,16 @@ class AlpacaExchange(Exchange):
                     ) from e
             return await resp.json()
 
-    async def market_order(self, symbol: str, qty: float, current_price: float, side: str, reduce_only: bool) -> str:
+    async def market_order(
+        self,
+        symbol: str,
+        qty: float,
+        current_price: float,
+        side: str,
+        *,
+        reduce_only: bool,
+    ) -> str:
+        del current_price
         order_data = {
             "symbol": symbol,
             "qty": qty,
@@ -76,7 +88,15 @@ class AlpacaExchange(Exchange):
         data = await self._request("POST", "/orders", json=order_data)
         return data["id"]
 
-    async def limit_order(self, symbol: str, qty: float, price: float, side: str, reduce_only: bool) -> str:
+    async def limit_order(
+        self,
+        symbol: str,
+        qty: float,
+        price: float,
+        side: str,
+        *,
+        reduce_only: bool,
+    ) -> str:
         order_data = {
             "symbol": symbol,
             "qty": qty,
@@ -89,7 +109,15 @@ class AlpacaExchange(Exchange):
         data = await self._request("POST", "/orders", json=order_data)
         return data["id"]
 
-    async def stop_order(self, symbol: str, qty: float, price: float, side: str, reduce_only: bool) -> str:
+    async def stop_order(
+        self,
+        symbol: str,
+        qty: float,
+        price: float,
+        side: str,
+        *,
+        reduce_only: bool,
+    ) -> str:
         order_data = {
             "symbol": symbol,
             "qty": qty,
@@ -103,11 +131,15 @@ class AlpacaExchange(Exchange):
         return data["id"]
 
     async def cancel_all_orders(self, symbol: str) -> None:
-        orders: List[Dict[str, Any]] = await self._request("GET", "/orders", json={"symbols": [symbol]})
+        orders: list[dict[str, Any]] = await self._request(
+            "GET",
+            "/orders",
+            json={"symbols": [symbol]},
+        )
         for order in orders:
             await self.cancel_order(symbol, order["id"])
 
-    async def cancel_order(self, symbol: str, order_id: str) -> None:
+    async def cancel_order(self, order_id: str) -> None:
         await self._request("DELETE", f"/orders/{order_id}")
 
     async def get_balance(self) -> float:

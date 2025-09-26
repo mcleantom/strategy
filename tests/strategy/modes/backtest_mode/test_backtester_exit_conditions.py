@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import numpy as np
 
 from strategy.modes.backtest_mode import Backtester
@@ -5,11 +7,20 @@ from strategy.strategy import Order, Strategy
 
 
 def _mk_candle(ts: int, price: float):
-    dtype = [("timestamp", "i8"), ("open", "f8"), ("close", "f8"), ("high", "f8"), ("low", "f8"), ("volume", "f8")]
+    dtype = [
+        ("timestamp", "i8"),
+        ("open", "f8"),
+        ("close", "f8"),
+        ("high", "f8"),
+        ("low", "f8"),
+        ("volume", "f8"),
+    ]
     return np.array([(ts, price, price, price, price, 0.0)], dtype=dtype)[0]
 
 
 class CancelStrategy(Strategy):
+    """Cancels order."""
+
     def __init__(self):
         super().__init__()
         self._should_cancel = False
@@ -38,7 +49,7 @@ def test_should_cancel_entry_exits_position():
             _mk_candle(0, 100.0),
             _mk_candle(60_000, 100.0),  # enter long
             _mk_candle(120_000, 100.0),  # cancel
-        ]
+        ],
     )
     strat._should_cancel = True
     bt.backtest(candles)
@@ -76,7 +87,7 @@ def test_stop_loss_and_take_profit_both_conditions():
             _mk_candle(0, 100.0),
             _mk_candle(60_000, 100.0),  # enter
             _mk_candle(120_000, 105.0),  # hit TP
-        ]
+        ],
     )
     bt.backtest(candles)
     assert len(bt.trades) >= 1

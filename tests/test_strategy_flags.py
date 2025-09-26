@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import numpy as np
 
 from strategy.models.position import Position, PositionType
@@ -6,11 +8,20 @@ from strategy.strategy import Order, Strategy
 
 
 def _mk_candle(ts: int, price: float):
-    dtype = [("timestamp", "i8"), ("open", "f8"), ("close", "f8"), ("high", "f8"), ("low", "f8"), ("volume", "f8")]
+    dtype = [
+        ("timestamp", "i8"),
+        ("open", "f8"),
+        ("close", "f8"),
+        ("high", "f8"),
+        ("low", "f8"),
+        ("volume", "f8"),
+    ]
     return np.array([(ts, price, price, price, price, 0.0)], dtype=dtype)[0]
 
 
 class NoOpStrategy(Strategy):
+    """Does nothing."""
+
     def should_long(self) -> bool:
         return False
 
@@ -29,7 +40,8 @@ class NoOpStrategy(Strategy):
 
 def test_is_long_is_short_flags():
     s = NoOpStrategy()
-    assert not s.is_long and not s.is_short
+    assert not s.is_long
+    assert not s.is_short
     s.position = Position(
         exchange_name="x",
         symbol="AAPL",
@@ -40,9 +52,11 @@ def test_is_long_is_short_flags():
         closed_at=None,  # type: ignore[arg-type]
         type=PositionType.long,
     )
-    assert s.is_long and not s.is_short
+    assert s.is_long
+    assert not s.is_short
     s.position.type = PositionType.short
-    assert not s.is_long and s.is_short
+    assert not s.is_long
+    assert s.is_short
 
 
 def test_available_margin_updates_during_backtest():

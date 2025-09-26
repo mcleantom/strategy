@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import pytest
 
 from strategy.utils import floor_with_precision, risk_to_qty, risk_to_size, size_to_qty
@@ -37,14 +39,25 @@ def test_risk_to_size_zero_risk_per_qty_raises():
 
 
 def test_risk_to_qty_integration():
-    qty = risk_to_qty(capital=10_000, risk_per_capital=1.0, entry_price=10.0, stop_loss_price=9.0, precision=2)
+    qty = risk_to_qty(
+        capital=10_000,
+        risk_per_capital=1.0,
+        entry_price=10.0,
+        stop_loss_price=9.0,
+        precision=2,
+    )
     # risk per qty = 1, size = ((0.01 * 10000)/1)*10 = 1000 -> qty = 1000/10 = 100
     assert qty == 100.0
 
 
 def test_risk_to_qty_with_fee():
     qty = risk_to_qty(
-        capital=10_000, risk_per_capital=1.0, entry_price=10.0, stop_loss_price=9.0, precision=4, fee_rate=0.001
+        capital=10_000,
+        risk_per_capital=1.0,
+        entry_price=10.0,
+        stop_loss_price=9.0,
+        precision=4,
+        fee_rate=0.001,
     )
     # fees applied once in risk_to_qty (size *= 1 - 3*fee) and again inside size_to_qty
     expected_size = ((0.01 * 10_000) / 1.0) * 10.0 * (1 - 0.003)

@@ -1,15 +1,19 @@
+from __future__ import annotations
+
 import os
 
 import numpy as np
 import pytest
 
-from strategy.db.candle import Candle
+from strategy.db.candle import CandleModel
 from strategy.modes.backtest_mode import Backtester
 from strategy.strategy import Order, Strategy
 from strategy.utils.helpers import to_numpy_array, to_structured_array
 
 
 class BuyAndHoldStrategy(Strategy):
+    """Buy and hold strategy."""
+
     def __init__(self):
         super().__init__()
         self.has_bought = False
@@ -19,7 +23,12 @@ class BuyAndHoldStrategy(Strategy):
 
     def go_long(self) -> Order:
         self.has_bought = True
-        return Order(quantity=1, price=self.store.candles.most_recent_candle.close, stop_loss=None, take_profit=None)
+        return Order(
+            quantity=1,
+            price=self.store.candles.most_recent_candle.close,
+            stop_loss=None,
+            take_profit=None,
+        )
 
     def should_short(self) -> bool:
         return False
@@ -32,9 +41,9 @@ class BuyAndHoldStrategy(Strategy):
 
 
 @pytest.fixture
-def test_candles() -> list[Candle]:
+def test_candles() -> list[CandleModel]:
     return [
-        Candle(
+        CandleModel(
             timestamp=1,
             open=100,
             high=110,
@@ -45,7 +54,7 @@ def test_candles() -> list[Candle]:
             symbol="AAPL",
             timeframe="1D",
         ),
-        Candle(
+        CandleModel(
             timestamp=2,
             open=106,
             high=115,
@@ -56,7 +65,7 @@ def test_candles() -> list[Candle]:
             symbol="AAPL",
             timeframe="1D",
         ),
-        Candle(
+        CandleModel(
             timestamp=3,
             open=111,
             high=120,
@@ -67,7 +76,7 @@ def test_candles() -> list[Candle]:
             symbol="AAPL",
             timeframe="1D",
         ),
-        Candle(
+        CandleModel(
             timestamp=4,
             open=116,
             high=125,
@@ -82,7 +91,7 @@ def test_candles() -> list[Candle]:
 
 
 def test_example_strategy(
-    test_candles: list[Candle],
+    test_candles: list[CandleModel],
 ):
     backtester = Backtester(strategy=BuyAndHoldStrategy(), initial_balance=10_000)
     candles = to_numpy_array(test_candles)
@@ -93,13 +102,19 @@ def test_example_strategy(
     assert backtester.trades[0].entry_price == candles[0]["close"]
     assert backtester.trades[0].exit_price == candles[-1]["close"]
     # PnL is exit - entry for long
-    assert backtester.pnl == backtester.trades[0].exit_price - backtester.trades[0].entry_price
+    assert (
+        backtester.pnl
+        == backtester.trades[0].exit_price - backtester.trades[0].entry_price
+    )
 
 
-requires_db = pytest.mark.skipif(os.getenv("LIVE_DB") != "1", reason="Skipping DB-dependent test")
+requires_db = pytest.mark.skipif(
+    os.getenv("LIVE_DB") != "1",
+    reason="Skipping DB-dependent test",
+)
 
 
-def test_no_balance_throws(test_candles: list[Candle]):
+def test_no_balance_throws(test_candles: list[CandleModel]):
     backtester = Backtester(strategy=BuyAndHoldStrategy(), initial_balance=0)
     candles = to_numpy_array(test_candles)
     with pytest.raises(RuntimeError) as e:
@@ -125,7 +140,7 @@ def test_exit_stop_loss_short():
     assert backtester.should_exit_position(candle)
 
 
-def test_exit_short_position(test_candles: list[Candle]):
+def test_exit_short_position(test_candles: list[CandleModel]):
     class ShortOnceStrategy(Strategy):
         def __init__(self):
             super().__init__()

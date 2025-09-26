@@ -6,9 +6,11 @@ Create Date: 2024-12-24 19:53:22.382784
 
 """
 
-from alembic import op
+from __future__ import annotations
+
 import sqlalchemy as sa
 
+from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "c26039d3a3d8"
@@ -29,14 +31,23 @@ def upgrade() -> None:
         sa.Column("end_time", sa.DateTime(), nullable=False),
         sa.PrimaryKeyConstraint("id"),
     )
-    op.create_index(op.f("ix_backtest_results_id"), "backtest_results", ["id"], unique=False)
+    op.create_index(
+        op.f("ix_backtest_results_id"),
+        "backtest_results",
+        ["id"],
+        unique=False,
+    )
     op.create_table(
         "baseline_curve",
         sa.Column("id", sa.Integer(), nullable=False),
         sa.Column("backtest_result_id", sa.Integer(), nullable=False),
         sa.Column("timestamp", sa.DateTime(), nullable=False),
         sa.Column("value", sa.Float(), nullable=False),
-        sa.ForeignKeyConstraint(["backtest_result_id"], ["backtest_results.id"], ondelete="CASCADE"),
+        sa.ForeignKeyConstraint(
+            ["backtest_result_id"],
+            ["backtest_results.id"],
+            ondelete="CASCADE",
+        ),
         sa.PrimaryKeyConstraint("id"),
     )
     op.create_index(op.f("ix_baseline_curve_id"), "baseline_curve", ["id"], unique=False)
@@ -46,7 +57,11 @@ def upgrade() -> None:
         sa.Column("backtest_result_id", sa.Integer(), nullable=False),
         sa.Column("timestamp", sa.DateTime(), nullable=False),
         sa.Column("value", sa.Float(), nullable=False),
-        sa.ForeignKeyConstraint(["backtest_result_id"], ["backtest_results.id"], ondelete="CASCADE"),
+        sa.ForeignKeyConstraint(
+            ["backtest_result_id"],
+            ["backtest_results.id"],
+            ondelete="CASCADE",
+        ),
         sa.PrimaryKeyConstraint("id"),
     )
     op.create_index(op.f("ix_equity_curve_id"), "equity_curve", ["id"], unique=False)
@@ -64,10 +79,19 @@ def upgrade() -> None:
         sa.Column("average_win_loss", sa.Float(), nullable=True),
         sa.Column("average_win", sa.Float(), nullable=True),
         sa.Column("average_loss", sa.Float(), nullable=True),
-        sa.ForeignKeyConstraint(["backtest_result_id"], ["backtest_results.id"], ondelete="CASCADE"),
+        sa.ForeignKeyConstraint(
+            ["backtest_result_id"],
+            ["backtest_results.id"],
+            ondelete="CASCADE",
+        ),
         sa.PrimaryKeyConstraint("id"),
     )
-    op.create_index(op.f("ix_performance_metrics_id"), "performance_metrics", ["id"], unique=False)
+    op.create_index(
+        op.f("ix_performance_metrics_id"),
+        "performance_metrics",
+        ["id"],
+        unique=False,
+    )
     op.create_table(
         "risk_metrics",
         sa.Column("id", sa.Integer(), nullable=False),
@@ -83,7 +107,11 @@ def upgrade() -> None:
         sa.Column("gross_profit", sa.Float(), nullable=False),
         sa.Column("gross_loss", sa.Float(), nullable=False),
         sa.Column("max_drawdown", sa.Float(), nullable=False),
-        sa.ForeignKeyConstraint(["backtest_result_id"], ["backtest_results.id"], ondelete="CASCADE"),
+        sa.ForeignKeyConstraint(
+            ["backtest_result_id"],
+            ["backtest_results.id"],
+            ondelete="CASCADE",
+        ),
         sa.PrimaryKeyConstraint("id"),
     )
     op.create_index(op.f("ix_risk_metrics_id"), "risk_metrics", ["id"], unique=False)
@@ -103,7 +131,11 @@ def upgrade() -> None:
         sa.Column("fee", sa.Float(), nullable=False),
         sa.Column("total_open_trades", sa.Integer(), nullable=False),
         sa.Column("open_pl", sa.Float(), nullable=False),
-        sa.ForeignKeyConstraint(["backtest_result_id"], ["backtest_results.id"], ondelete="CASCADE"),
+        sa.ForeignKeyConstraint(
+            ["backtest_result_id"],
+            ["backtest_results.id"],
+            ondelete="CASCADE",
+        ),
         sa.PrimaryKeyConstraint("id"),
     )
     op.create_index(op.f("ix_trade_metrics_id"), "trade_metrics", ["id"], unique=False)

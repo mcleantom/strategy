@@ -1,16 +1,27 @@
+from __future__ import annotations
+
 import numpy as np
 import numpy.typing as npt
 
-from tests.data.test_candle_indicators import test_candles_10, test_candles_19
-
 import strategy.indicators as ta
-from strategy.db.candle import Candle
+from strategy.db.candle import CandleModel
 from strategy.utils.helpers import to_numpy_array
+from tests.data.test_candle_indicators import test_candles_10, test_candles_19
 
 
 def _to_db_candles(raw_candles: list[tuple[float, ...]]) -> npt.NDArray:
     return to_numpy_array(
-        [Candle(timestamp=c[0], high=c[3], low=c[4], close=c[2], open=c[1], volume=c[5]) for c in raw_candles]
+        [
+            CandleModel(
+                timestamp=c[0],
+                high=c[3],
+                low=c[4],
+                close=c[2],
+                open=c[1],
+                volume=c[5],
+            )
+            for c in raw_candles
+        ],
     )
 
 
@@ -28,7 +39,7 @@ def test_ad():
     candles = _to_db_candles(test_candles_19)
     single = ta.ad(candles)
     sequence = ta.ad(candles, sequential=True)
-    assert round(single, 0) == round(6346031, 0)
+    assert round(single, 0) == (6346031)
     assert len(sequence) == len(candles)
     assert sequence[-1] == single
 

@@ -1,3 +1,6 @@
+from __future__ import annotations
+
+from datetime import UTC, datetime
 from typing import Any
 
 import numpy as np
@@ -7,6 +10,8 @@ from strategy.strategy import Order, Strategy
 
 
 class DummyExchange:
+    """Mock exchange."""
+
     def __init__(self, balance: float = 10_000):
         self._balance = balance
         self.orders: list[dict[str, Any]] = []
@@ -15,9 +20,22 @@ class DummyExchange:
     def get_balance(self) -> float:
         return self._balance
 
-    def market_order(self, symbol: str, qty: float, current_price: float, side: str, reduce_only: bool = False):
+    def market_order(
+        self,
+        symbol: str,
+        qty: float,
+        current_price: float,
+        side: str,
+        reduce_only: bool = False,
+    ):
         self.orders.append(
-            {"symbol": symbol, "qty": qty, "price": current_price, "side": side, "reduce_only": reduce_only}
+            {
+                "symbol": symbol,
+                "qty": qty,
+                "price": current_price,
+                "side": side,
+                "reduce_only": reduce_only,
+            },
         )
         return "ORDER-1"
 
@@ -26,6 +44,8 @@ class DummyExchange:
 
 
 class DummyStrategy(Strategy):
+    """Buy and hold."""
+
     def __init__(self):
         super().__init__()
         self._should_long = False
@@ -47,7 +67,14 @@ class DummyStrategy(Strategy):
 
 
 def _mk_candle(price: float):
-    dtype = [("timestamp", "i8"), ("open", "f8"), ("close", "f8"), ("high", "f8"), ("low", "f8"), ("volume", "f8")]
+    dtype = [
+        ("timestamp", "i8"),
+        ("open", "f8"),
+        ("close", "f8"),
+        ("high", "f8"),
+        ("low", "f8"),
+        ("volume", "f8"),
+    ]
     return np.array([(1, price, price, price, price, 0.0)], dtype=dtype)[0]
 
 
@@ -76,7 +103,7 @@ def test_exit_position_with_no_order_id():
         type="long",
         entry_price=100.0,
         quantity=1.0,
-        entry_timestamp=None,  # type: ignore
+        entry_timestamp=datetime.now(tz=UTC),
     )
     trader.order_id = None
 

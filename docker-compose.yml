@@ -1,7 +1,4 @@
-version: '3.5'
-
 services:
-  ### PostgreSQL ################################################
   postgres:
     image: postgres:17-alpine
     restart: always
@@ -14,40 +11,6 @@ services:
     container_name: postgres
     ports:
       - "5432:5432"
-
-  ### Redis ################################################
-  redis:
-    image: redis:6-alpine
-    container_name: redis
-    command: redis-server --save "" --appendonly no
-
-  pgadmin:
-    image: dpage/pgadmin4
-    restart: always
-    environment:
-      PGADMIN_DEFAULT_EMAIL: admin@example.com       # Set the pgAdmin default admin email
-      PGADMIN_DEFAULT_PASSWORD: admin_password       # Set the pgAdmin default admin password
-    ports:
-      - "8080:80"  # Expose pgAdmin on port 8080
-    depends_on:
-      - postgres    # Ensure PostgreSQL starts before pgAdmin
-    container_name: pgadmin
-
-  grafana:
-    image: grafana/grafana
-    restart: always
-    ports:
-      - "3000:3000"
-
-  pyright:
-    image: mcr.microsoft.com/vscode/devcontainers/python:latest
-    container_name: pyright
-    ports:
-      - "5000:5000"  # Expose port for WebSocket connection
-    command: [ "npx", "pyright", "--project", "/workspace" ]  # Command to start Pyright LSP
-    volumes:
-      - ./workspace:/workspace  # Mount your code directory into the container
-    restart: always
 
 volumes:
   postgres-data:

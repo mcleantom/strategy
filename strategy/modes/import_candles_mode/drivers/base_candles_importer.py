@@ -1,9 +1,15 @@
-from abc import ABC, abstractmethod
+from __future__ import annotations
 
-import requests
+from abc import ABC, abstractmethod
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    import requests
 
 
 class CandlesImporter(ABC):
+    """Candles importer."""
+
     def __init__(self, name: str, count: int, rate_limit_per_second: float):
         self.name = name
         self.count = count
@@ -27,19 +33,4 @@ class CandlesImporter(ABC):
 
     @staticmethod
     def validate_response(response: requests.Response):
-        if response.status_code == 502:
-            raise ConnectionError("Error: 502 bad gateway, try again later")
-        elif response.status_code // 100 == 5:
-            raise ConnectionError("ERROR: {} {}".format(response.status_code, response.reason))
-
-        # unsupported inputs
-        if response.status_code == 400:
-            raise ValueError(response.content)
-
-        # unsupported inputs
-        if response.status_code == 404:
-            raise ValueError(f"ERROR {response.status_code} {response.reason}. Check the symbol")
-
-        # if the response code is not in the 200-299, raise an exception
-        if response.status_code // 100 != 2:
-            raise ConnectionError(f"ERROR {response.status_code} {response.reason}")
+        response.raise_for_status()

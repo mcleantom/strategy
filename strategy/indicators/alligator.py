@@ -1,18 +1,23 @@
-from collections import namedtuple
+from __future__ import annotations
+
+from typing import NamedTuple
 
 import numpy as np
 import numpy.typing as npt
 
 from strategy.utils.helpers import np_shift, slice_candles
 
-AG = namedtuple("AG", ["jaw", "teeth", "lips"])
+AG = NamedTuple("AG", ["jaw", "teeth", "lips"])
 
 
-def alligator(candles: npt.NDArray, source_type: str = "close", sequential: bool = False) -> AG:
-    """
-    Alligator
-    """
-    candles = slice_candles(candles, sequential)
+def alligator(
+    candles: npt.NDArray,
+    source_type: str = "close",
+    *,
+    sequential: bool = False,
+) -> AG:
+    """Alligator."""
+    candles = slice_candles(candles, sequential=sequential)
     source = candles[source_type]
     jaw = np_shift(numpy_ewma(source, 13), 8, fill_value=np.nan)
     teeth = np_shift(numpy_ewma(source, 8), 5, fill_value=np.nan)
@@ -23,7 +28,7 @@ def alligator(candles: npt.NDArray, source_type: str = "close", sequential: bool
 
 
 def numpy_ewma(data: npt.NDArray, window: int):
-    """Exponentially Weighted Moving Average"""
+    """Exponentially Weighted Moving Average."""
     alpha = 1 / window
     n = data.shape[0]
     scale_arr = (1 - alpha) ** (-1 * np.arange(n))

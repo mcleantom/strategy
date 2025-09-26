@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import math
 
 
@@ -9,8 +11,7 @@ def risk_to_qty(
     precision: int = 8,
     fee_rate: float = 0,
 ) -> float:
-    """
-    a risk management tool to quickly get the qty based on risk percentage
+    """A risk management tool to quickly get the qty based on risk percentage.
 
     :param capital:
     :param risk_per_capital:
@@ -29,9 +30,14 @@ def risk_to_qty(
     return size_to_qty(size, entry_price, precision=precision, fee_rate=fee_rate)
 
 
-def risk_to_size(capital_size: float, risk_percentage: float, risk_per_qty: float, entry_price: float) -> float:
-    """
-    calculates the size of the position based on the amount of risk percentage you're willing to take
+def risk_to_size(
+    capital_size: float,
+    risk_percentage: float,
+    risk_per_qty: float,
+    entry_price: float,
+) -> float:
+    """Calculates the size of the position based on the amount of risk percentage you're willing to take.
+
     example: round(risk_to_size(10000, 1, 0.7, 8.6)) == 1229
 
     :param capital_size:
@@ -48,9 +54,14 @@ def risk_to_size(capital_size: float, risk_percentage: float, risk_per_qty: floa
     return min(temp_size, capital_size)
 
 
-def size_to_qty(position_size: float, entry_price: float, precision: int = 3, fee_rate: float = 0) -> float:
-    """
-    converts position-size to quantity
+def size_to_qty(
+    position_size: float,
+    entry_price: float,
+    precision: int = 3,
+    fee_rate: float = 0,
+) -> float:
+    """Converts position-size to quantity.
+
     example: requesting $100 at the entry_price of $50 would return 2
     :param position_size: float
     :param entry_price: float
@@ -68,5 +79,5 @@ def size_to_qty(position_size: float, entry_price: float, precision: int = 3, fe
 
 
 def floor_with_precision(num: float, precision: int = 0) -> float:
-    temp = 10**precision
+    temp: int = 10**precision
     return math.floor(num * temp) / temp

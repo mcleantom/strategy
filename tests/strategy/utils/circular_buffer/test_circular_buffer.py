@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import numpy as np
 
 from strategy.utils.circular_buffer import CircularBuffer
@@ -43,10 +45,6 @@ def test_drop_at():
     a.append(np.array([20, 21, 22, 23, 24]))
     assert a[4][0] == 20
     assert a[0][0] == 0
-    # Drops the first half, array is now:
-    # [[15, 16, 17, 18, 19],
-    #  [20, 21, 22, 23, 24],
-    #  [25, 26, 27, 28, 29]]
     a.append(np.array([25, 26, 27, 28, 29]))
     assert a[0][0] == 15
     assert a[2][0] == 25
@@ -110,4 +108,6 @@ def test_to_string():
     buf.array = to_structured_array(np.zeros((1000, 6)))
     buf.append(to_structured_array(np.array([[1, 2, 3, 4, 5, 6]])))
     buf.append(to_structured_array(np.array([[25, 26, 27, 28, 29, 30]])))
-    assert str(buf) == "[( 1,  2.,  3.,  4.,  5.,  6.) (25, 26., 27., 28., 29., 30.)]", str(buf)
+    assert str(buf) == "[( 1,  2.,  3.,  4.,  5.,  6.) (25, 26., 27., 28., 29., 30.)]", (
+        str(buf)
+    )

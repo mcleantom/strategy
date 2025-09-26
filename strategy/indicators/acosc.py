@@ -1,21 +1,26 @@
-from collections import namedtuple
+from __future__ import annotations
 
-import numpy.typing as npt
+from typing import TYPE_CHECKING, NamedTuple
+
 import talib
 
-AC = namedtuple("AC", ["osc", "change"])
+if TYPE_CHECKING:
+    import numpy.typing as npt
+
+class AC(NamedTuple):
+    osc: float
+    change: float
 
 
-def acosc(candles: npt.NDArray, sequential: bool = False) -> AC:
+def acosc(candles: npt.NDArray, *, sequential: bool = False) -> AC:
     high = candles["high"]
     low = candles["low"]
     med = talib.MEDPRICE(high, low)
-    ao = talib.SMA(med, 5) - talib.SMA(med, 34)
+    ao: float = talib.SMA(med, 5) - talib.SMA(med, 34)
 
-    res = ao - talib.SMA(ao, 5)
+    res: float = ao - talib.SMA(ao, 5)
     mom = talib.MOM(res, timeperiod=1)
 
     if sequential:
         return AC(res, mom)
-    else:
-        return AC(res[-1], mom[-1])
+    return AC(res[-1], mom[-1])

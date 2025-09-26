@@ -1,39 +1,46 @@
+from __future__ import annotations
+
+from typing import Any
+
 import numpy as np
 import numpy.typing as npt
 
 
 class CircularBuffer:
-    def __init__(self, shape: tuple, drop_at: int | None = None):
+    """Circular buffer."""
+
+    def __init__(self, shape: tuple[int], drop_at: int | None = None):
         self.index = -1
         self.array = np.zeros(shape)
-        # self.bucket_size = shape[0]
         self.shape = shape
         self.drop_at = drop_at
 
     @property
-    def bucket_size(self):
+    def bucket_size(self) -> int:
         return self.array.shape[0]
 
-    def __str__(self):
+    def __str__(self) -> str:
         return str(self.array[: self.index + 1])
 
-    def __len__(self):
+    def __len__(self) -> int:
         return self.index + 1
 
-    def __getitem__(self, i):
+    def __getitem__(self, i) -> npt.NDArray:
         if isinstance(i, str):
             return self.array[i][: self.index + 1]
         if isinstance(i, slice):
-            start, stop, step = i.indices(self.index + 1)
+            start, stop, _ = i.indices(self.index + 1)
             return self.array[start:stop]
 
         if i < 0:
             i = (self.index + 1) - abs(i)
         if self.index == -1 or i > self.index or i < 0:
-            raise IndexError(f"list assignment index out of range. self.index={self.index}, i={i}")
+            raise IndexError(
+                f"list assignment index out of range. self.index={self.index}, i={i}",
+            )
         return self.array[i]
 
-    def __setitem__(self, i, item) -> None:
+    def __setitem__(self, i: slice | int, item: npt.ArrayLike) -> None:
         if isinstance(i, slice):
             start = i.start
             stop = i.stop
@@ -62,7 +69,11 @@ class CircularBuffer:
         if self.index != 0 and (self.index + 1) % self.bucket_size == 0:
             self.array = np.concatenate((self.array, np.zeros_like(self.array)), axis=0)
 
-        if self.drop_at is not None and self.index != 0 and (self.index + 1) % self.drop_at == 0:
+        if (
+            self.drop_at is not None
+            and self.index != 0
+            and (self.index + 1) % self.drop_at == 0
+        ):
             shift_num = int(self.drop_at / 2)
             self.index -= shift_num
             self.array = self.np_shift(self.array, -shift_num)
@@ -70,7 +81,7 @@ class CircularBuffer:
         self.array[self.index] = item
 
     @staticmethod
-    def np_shift(arr: np.ndarray, num: int, fill_value=0) -> np.ndarray:
+    def np_shift(arr: npt.NDArray, num: int, fill_value=0) -> npt.NDArray:
         result = np.empty_like(arr)
 
         if num > 0:

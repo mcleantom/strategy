@@ -6,9 +6,9 @@ Create Date: 2024-09-20 22:10:54.292906
 
 """
 
-from alembic import op
-import sqlalchemy as sa
+from __future__ import annotations
 
+from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "a914705a8001"
@@ -23,7 +23,7 @@ def upgrade() -> None:
         """
         UPDATE candles
         SET time = to_timestamp(timestamp / 1000) AT TIME ZONE 'UTC'
-    """
+    """,
     )
     # ### end Alembic commands ###
 

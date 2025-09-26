@@ -1,9 +1,11 @@
+from __future__ import annotations
+
 from sqlalchemy import UUID, BigInteger, Column, Float, String, UniqueConstraint
 
 from strategy.db.base import Base
 
 
-class Candle(Base):
+class CandleModel(Base):
     __tablename__ = "candles"
 
     id = Column(UUID, primary_key=True)
@@ -18,5 +20,11 @@ class Candle(Base):
     timeframe = Column(String(), index=True)
 
     __table_args__ = (
-        UniqueConstraint("exchange", "symbol", "timeframe", "timestamp", name="unique_candle_constraint"),
+        UniqueConstraint(
+            "exchange",
+            "symbol",
+            "timeframe",
+            "timestamp",
+            name="unique_candle_constraint",
+        ),
     )

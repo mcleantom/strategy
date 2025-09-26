@@ -1,11 +1,15 @@
-import numpy.typing as npt
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 import talib
 
+if TYPE_CHECKING:
+    import numpy.typing as npt
 
-def ad(candles: npt.NDArray, sequential: bool = False) -> float | npt.NDArray:
-    """
-    Chaikin A/D Line
-    """
+
+def ad(candles: npt.NDArray, *, sequential: bool = False) -> float | npt.NDArray:
+    """Chaikin A/D Line."""
     high = candles["high"]
     low = candles["low"]
     close = candles["close"]
