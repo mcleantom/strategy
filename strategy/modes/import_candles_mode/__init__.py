@@ -43,7 +43,7 @@ def run(  # noqa: C901
     symbol: str,
     start_date_str: str,
     mode: str = "candles",
-):
+) -> None:
     today = arrow_to_timestamp(arrow.utcnow().floor("day"))
     start_timestamp = arrow_to_timestamp(arrow.get(start_date_str, "YYYY-MM-DD"))
     if start_timestamp == today or start_timestamp > today:
@@ -87,7 +87,7 @@ def run(  # noqa: C901
             candles = driver.fetch(symbol, temp_start_timestamp, "1m")
 
             time_diff = (
-                int((candles[0]["timestamp"] - temp_start_timestamp) / 1000)
+                int((int(candles[0]["timestamp"]) - temp_start_timestamp) / 1000)
                 if len(candles)
                 else 0
             )
@@ -158,7 +158,7 @@ def _get_candles_from_backup_exchange(
         )
         .order_by(asc(CandleModel.timestamp))
     )
-    backup_candles = session.execute(statement)
+    backup_candles = session.execute(statement).all()
     already_exists = len(backup_candles) == (end_timestamp - start_timestamp) / 60_000 + 1
     if already_exists:
         total_candles.extend(
@@ -190,7 +190,7 @@ def _fill_absent_candles(
 ) -> list[dict[str, str | Any]]:
     symbol = temp_candles[0]["symbol"]
     exchange = temp_candles[0]["exchange"]
-    candles: list[dict[str, str | Any]] = []
+    candles: list[dict[str, str | float]] = []
     first_candle = temp_candles[0]
     started = False
     loop_length = ((end_timestamp - start_timestamp) / 60_000) + 1
@@ -241,10 +241,10 @@ def _fill_absent_candles(
     return candles
 
 
-def store_candles_list(candles: list[dict]) -> None:
+def store_candles_list(candles: list[dict[str, float | str]]) -> None:
     logger.info(
-        f"Saving candles from {timestamp_to_time(candles[0]['timestamp'])} "
-        f"to {timestamp_to_time(candles[-1]['timestamp'])}",
+        f"Saving candles from {timestamp_to_time(int(candles[0]['timestamp']))} "
+        f"to {timestamp_to_time(int(candles[-1]['timestamp']))}",
     )
 
     for c in candles:
@@ -260,22 +260,25 @@ def store_candles_list(candles: list[dict]) -> None:
     db.commit()
 
 
+type CandleTuple = tuple[float, float, float, float, float, float]
+
+
 def generate_candles_from_one_minute_candles(
     candles: npt.NDArray,
     timeframe: ETimeframe,
 ) -> npt.NDArray:
-    generated_candles: list[tuple] = []
+    generated_candles: list[CandleTuple] = []
     num = timeframe.to_minutes()
     for i in range(len(candles)):
         if (i + 1) % num == 0:
             tmp_candles = candles[i - (num - 1) : (i + 1)]
-            aggregated_candle = (
-                tmp_candles["timestamp"][0],
-                tmp_candles["open"][0],
-                tmp_candles["close"][-1],
-                tmp_candles["high"].max(),
-                tmp_candles["low"].min(),
-                tmp_candles["volume"].sum(),
+            aggregated_candle: CandleTuple = (
+                float(tmp_candles["timestamp"][0]),
+                float(tmp_candles["open"][0]),
+                float(tmp_candles["close"][-1]),
+                float(tmp_candles["high"].max()),
+                float(tmp_candles["low"].min()),
+                float(tmp_candles["volume"].sum()),
             )
             generated_candles.append(aggregated_candle)
     return np.array(generated_candles, dtype=candles.dtype)

@@ -6,7 +6,7 @@ from strategy.modes.backtest_mode import Backtester
 from strategy.strategy import Order, Strategy
 
 
-def _mk_candle(ts: int, price: float):
+def _mk_candle(ts: int, price: float) -> np.ndarray:
     dtype = [
         ("timestamp", "i8"),
         ("open", "f8"),
@@ -21,7 +21,7 @@ def _mk_candle(ts: int, price: float):
 class CancelStrategy(Strategy):
     """Cancels order."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
         self._should_cancel = False
 
@@ -34,14 +34,14 @@ class CancelStrategy(Strategy):
     def should_short(self) -> bool:
         return False
 
-    def go_short(self):
-        return None
+    def go_short(self) -> Order:
+        raise NotImplementedError
 
     def should_cancel_entry(self) -> bool:
         return self._should_cancel
 
 
-def test_should_cancel_entry_exits_position():
+def test_should_cancel_entry_exits_position() -> None:
     strat = CancelStrategy()
     bt = Backtester(strategy=strat, initial_balance=1000.0)
     candles = np.array(
@@ -57,9 +57,9 @@ def test_should_cancel_entry_exits_position():
     assert len(bt.trades) >= 1
 
 
-def test_stop_loss_and_take_profit_both_conditions():
+def test_stop_loss_and_take_profit_both_conditions() -> None:
     class BothExitsStrategy(Strategy):
-        def __init__(self):
+        def __init__(self) -> None:
             super().__init__()
             self._entered = False
 
@@ -73,8 +73,8 @@ def test_stop_loss_and_take_profit_both_conditions():
         def should_short(self) -> bool:
             return False
 
-        def go_short(self):
-            return None
+        def go_short(self) -> Order:
+            raise NotImplementedError
 
         def should_cancel_entry(self) -> bool:
             return False

@@ -40,7 +40,7 @@ class Strategy(ABC):
         self.stop_loss = None
         self.take_profit = None
         self.position: Position | None = None
-        self._available_margin: float = 0.0
+        self.available_margin: float = 0.0
 
     @abstractmethod
     def go_long(self) -> Order:
@@ -61,10 +61,6 @@ class Strategy(ABC):
     @abstractmethod
     def should_cancel_entry(self) -> bool:
         """Returns if the strategy should cancel the order."""
-
-    @property
-    def available_margin(self) -> float:
-        return self._available_margin
 
     @property
     def candles(self) -> npt.NDArray:

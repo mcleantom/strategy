@@ -1522,7 +1522,7 @@ requires-dist = [
     { name = "pydash" },
     { name = "python-multipart" },
     { name = "quantstats", specifier = ">=0.0.77" },
-    { name = "sqlalchemy", extras = ["asyncio"] },
+    { name = "sqlalchemy", extras = ["asyncio"], specifier = "~=2.0" },
     { name = "ta-lib-easy" },
     { name = "tqdm" },
     { name = "uvicorn" },

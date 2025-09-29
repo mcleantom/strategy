@@ -16,11 +16,16 @@ class CandlesImporter(ABC):
         self.sleep_time = 1 / rate_limit_per_second
 
     @property
-    def backup_exchange(self):
+    def backup_exchange(self) -> None | CandlesImporter:
         return None
 
     @abstractmethod
-    def fetch(self, symbol: str, start_timestamp: int, timeframe: str) -> list:
+    def fetch(
+        self,
+        symbol: str,
+        start_timestamp: int,
+        timeframe: str,
+    ) -> list[dict[str, float | str]]:
         pass
 
     @abstractmethod
@@ -28,9 +33,9 @@ class CandlesImporter(ABC):
         pass
 
     @abstractmethod
-    def get_available_symbols(self) -> list:
+    def get_available_symbols(self) -> list[str]:
         pass
 
     @staticmethod
-    def validate_response(response: requests.Response):
+    def validate_response(response: requests.Response) -> None:
         response.raise_for_status()

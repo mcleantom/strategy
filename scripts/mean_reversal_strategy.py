@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+from typing import cast
 
 import numpy as np
 from sqlalchemy import select
@@ -14,8 +15,7 @@ from strategy.utils.helpers import to_numpy_array
 
 
 class MeanReversionV4(Strategy):
-    """
-    Mean Reversion with strict anti-churn controls.
+    """Mean Reversion with strict anti-churn controls.
 
     - z = (close - SMA(window)) / std(window)
     - Enter only when:
@@ -48,7 +48,7 @@ class MeanReversionV4(Strategy):
     qty : float
     """
 
-    def __init__(
+    def __init__(  # noqa: PLR0913
         self,
         *,
         window: int = 40,
@@ -68,7 +68,6 @@ class MeanReversionV4(Strategy):
         qty: float = 1.0,
     ):
         super().__init__()
-        assert exit_z < entry_z, "exit_z must be < entry_z for hysteresis"
         self.window = window
         self.entry_z = entry_z
         self.exit_z = exit_z
@@ -86,8 +85,8 @@ class MeanReversionV4(Strategy):
         self.qty = qty
 
         # runtime state
-        self._bars_in_trade = 0
-        self._cooldown_left = 0
+        self._bars_in_trade: int = 0
+        self._cooldown_left: int = 0
         self._bars_since_last_entry = 10**9  # large so first trade isn't blocked
 
     # --------- helpers ---------
@@ -101,19 +100,19 @@ class MeanReversionV4(Strategy):
     def _z_now(self) -> float | None:
         if not self._have(self.window):
             return None
-        closes = self.candles["close"][-self.window:].astype(float)
+        closes = self.candles["close"][-self.window :].astype(float)
         mu = float(np.mean(closes))
         sd = float(np.std(closes, ddof=1))
         if sd == 0.0:
             return None
-        return (closes[-1] - mu) / sd
+        return cast("float", (closes[-1] - mu) / sd)
 
     def _z_series(self, n: int) -> np.ndarray | None:
         # last n z-scores for persistence check
         need = max(self.window + n - 1, self.window)
         if not self._have(need):
             return None
-        closes = self.candles["close"][-(self.window + n - 1):].astype(float)
+        closes = self.candles["close"][-(self.window + n - 1) :].astype(float)
         zs = []
         for i in range(n):
             win = closes[i : i + self.window]
@@ -142,17 +141,25 @@ class MeanReversionV4(Strategy):
             return None
         return float(atr(self.candles, period=self.atr_period, sequential=False))
 
-    def _levels_from_atr(self, entry: float, side: str) -> tuple[float | None, float | None]:
+    def _levels_from_atr(
+        self,
+        entry: float,
+        side: str,
+    ) -> tuple[float | None, float | None]:
         a = self._atr_val()
         tp = sl = None
         if a is not None:
             if self.tp_atr is not None:
-                tp = entry + self.tp_atr * a if side == "long" else entry - self.tp_atr * a
+                tp = (
+                    entry + self.tp_atr * a if side == "long" else entry - self.tp_atr * a
+                )
             if self.sl_atr is not None:
-                sl = entry - self.sl_atr * a if side == "long" else entry + self.sl_atr * a
+                sl = (
+                    entry - self.sl_atr * a if side == "long" else entry + self.sl_atr * a
+                )
         return tp, sl
 
-    def _tick(self):
+    def _tick(self) -> None:
         # call each bar via should_long/should_short
         if self.position is not None and self.max_bars_in_trade is not None:
             self._bars_in_trade += 1
@@ -168,18 +175,15 @@ class MeanReversionV4(Strategy):
         if not self._adx_ok():
             return False
         a = self._atr_val()
-        if self.min_atr is not None and (a is None or a < self.min_atr):
-            return False
-        return True
+        return not (self.min_atr is not None and (a is None or a < self.min_atr))
 
     def _persisted_signal(self, side: str) -> bool:
         zs = self._z_series(self.confirm_bars)
         if zs is None:
             return False
         if side == "long":
-            return np.all(zs <= -self.entry_z)
-        else:
-            return np.all(zs >= self.entry_z)
+            return cast("bool", np.all(zs <= -self.entry_z))
+        return cast("bool", np.all(zs >= self.entry_z))
 
     # --------- Strategy API ---------
 
@@ -236,7 +240,10 @@ class MeanReversionV4(Strategy):
             return False
 
         # time stop
-        if self.max_bars_in_trade is not None and self._bars_in_trade >= self.max_bars_in_trade:
+        if (
+            self.max_bars_in_trade is not None
+            and self._bars_in_trade >= self.max_bars_in_trade
+        ):
             self._cooldown_left = self.cooldown_bars
             return True
 
@@ -248,8 +255,7 @@ class MeanReversionV4(Strategy):
         return False
 
 
-
-async def main():
+async def main() -> None:
     backtester = Backtester(
         strategy=MeanReversionV4(
             window=40,
@@ -265,7 +271,11 @@ async def main():
         ),
         initial_balance=10_000,
     )
-    stmt = select(CandleModel).where(CandleModel.symbol == "AAPL").order_by(CandleModel.timestamp)
+    stmt = (
+        select(CandleModel)
+        .where(CandleModel.symbol == "AAPL")
+        .order_by(CandleModel.timestamp)
+    )
     async with AsyncSessionLocal() as session:
         result = await session.execute(stmt)
     candles = result.scalars().all()

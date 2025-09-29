@@ -7,7 +7,7 @@ from strategy.modes.backtest_mode import Backtester
 from strategy.strategy import Order, Strategy
 
 
-def _mk_candle(ts: int, price: float):
+def _mk_candle(ts: int, price: float) -> np.ndarray:
     dtype = [
         ("timestamp", "i8"),
         ("open", "f8"),
@@ -25,23 +25,23 @@ class NoOpStrategy(Strategy):
     def should_long(self) -> bool:
         return False
 
-    def go_long(self):
-        raise AssertionError
+    def go_long(self) -> Order:
+        raise NotImplementedError
 
     def should_short(self) -> bool:
         return False
 
-    def go_short(self):
-        return None
+    def go_short(self) -> Order:
+        raise NotImplementedError
 
     def should_cancel_entry(self) -> bool:
         return False
 
 
-def test_is_long_is_short_flags():
+def test_is_long_is_short_flags() -> None:
     s = NoOpStrategy()
-    assert not s.is_long
-    assert not s.is_short
+    assert not bool(s.is_long)
+    assert not bool(s.is_short)
     s.position = Position(
         exchange_name="x",
         symbol="AAPL",
@@ -52,18 +52,18 @@ def test_is_long_is_short_flags():
         closed_at=None,  # type: ignore[arg-type]
         type=PositionType.long,
     )
-    assert s.is_long
-    assert not s.is_short
+    assert bool(s.is_long)
+    assert not bool(s.is_short)
     s.position.type = PositionType.short
     assert not s.is_long
     assert s.is_short
 
 
-def test_available_margin_updates_during_backtest():
+def test_available_margin_updates_during_backtest() -> None:
     class MarginStrategy(Strategy):
-        def __init__(self):
+        def __init__(self) -> None:
             super().__init__()
-            self.seen_margins = []
+            self.seen_margins: list[float] = []
             self._went_long = False
 
         def should_long(self) -> bool:
@@ -76,8 +76,8 @@ def test_available_margin_updates_during_backtest():
         def should_short(self) -> bool:
             return False
 
-        def go_short(self):
-            return None
+        def go_short(self) -> Order:
+            raise NotImplementedError
 
         def should_cancel_entry(self) -> bool:
             return False

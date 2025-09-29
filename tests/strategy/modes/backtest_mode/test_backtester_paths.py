@@ -1,13 +1,18 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 import numpy as np
 
 from strategy.models.enums import ETimeframe
 from strategy.modes.backtest_mode import Backtester
 from strategy.strategy import Order, Strategy
 
+if TYPE_CHECKING:
+    import numpy.typing as npt
 
-def _mk_candle(ts: int, price: float):
+
+def _mk_candle(ts: int, price: float) -> npt.NDArray:
     dtype = [
         ("timestamp", "i8"),
         ("open", "f8"),
@@ -22,15 +27,15 @@ def _mk_candle(ts: int, price: float):
 class ShortOnlyStrategy(Strategy):
     """Only shorts."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
         self._allow_short = True
 
     def should_long(self) -> bool:
         return False
 
-    def go_long(self):
-        raise AssertionError("should not be called")
+    def go_long(self) -> Order:
+        raise NotImplementedError
 
     def should_short(self) -> bool:
         return self._allow_short and self.position is None
@@ -49,7 +54,7 @@ class ShortOnlyStrategy(Strategy):
         return False
 
 
-def test_warmup_path_and_short_flow_with_exit():
+def test_warmup_path_and_short_flow_with_exit() -> None:
     # create > 300 one-minute candles so warmup triggers (250)
     candles = np.zeros(
         350,
@@ -80,7 +85,7 @@ def test_warmup_path_and_short_flow_with_exit():
     assert len(bt.equity_curve) >= (350 - 250)
 
 
-def test_should_exit_conditions_long_and_short():
+def test_should_exit_conditions_long_and_short() -> None:
     # Build a tiny sequence to test exit logic paths directly
     candles = np.array(
         [
@@ -91,7 +96,7 @@ def test_should_exit_conditions_long_and_short():
     )
 
     class LongStrategy(Strategy):
-        def __init__(self):
+        def __init__(self) -> None:
             super().__init__()
             self._went_long = False
 
@@ -111,8 +116,8 @@ def test_should_exit_conditions_long_and_short():
         def should_short(self) -> bool:
             return False
 
-        def go_short(self):
-            return None
+        def go_short(self) -> Order:
+            raise NotImplementedError
 
         def should_cancel_entry(self) -> bool:
             return False

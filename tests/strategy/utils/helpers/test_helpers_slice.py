@@ -5,7 +5,7 @@ import numpy as np
 import strategy.utils.helpers as sh
 
 
-def test_slice_candles_sequential_true():
+def test_slice_candles_sequential_true() -> None:
     # Test sequential=True path (no slicing)
     arr = np.zeros(
         500,

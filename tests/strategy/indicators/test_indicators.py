@@ -9,7 +9,9 @@ from strategy.utils.helpers import to_numpy_array
 from tests.data.test_candle_indicators import test_candles_10, test_candles_19
 
 
-def _to_db_candles(raw_candles: list[tuple[float, ...]]) -> npt.NDArray:
+def _to_db_candles(
+    raw_candles: list[tuple[int, float, float, float, float, float]],
+) -> npt.NDArray:
     return to_numpy_array(
         [
             CandleModel(
@@ -25,7 +27,7 @@ def _to_db_candles(raw_candles: list[tuple[float, ...]]) -> npt.NDArray:
     )
 
 
-def test_acosc():
+def test_acosc() -> None:
     candles = _to_db_candles(test_candles_19)
     single = ta.acosc(candles)
     sequence = ta.acosc(candles, sequential=True)
@@ -35,7 +37,7 @@ def test_acosc():
     assert len(sequence.osc) == len(candles)
 
 
-def test_ad():
+def test_ad() -> None:
     candles = _to_db_candles(test_candles_19)
     single = ta.ad(candles)
     sequence = ta.ad(candles, sequential=True)
@@ -44,7 +46,7 @@ def test_ad():
     assert sequence[-1] == single
 
 
-def test_adosc():
+def test_adosc() -> None:
     candles = _to_db_candles(test_candles_19)
     single = ta.adosc(candles, fast_period=3, slow_period=10)
     sequence = ta.adosc(candles, fast_period=3, slow_period=10, sequential=True)
@@ -53,14 +55,14 @@ def test_adosc():
     assert sequence[-1] == single
 
 
-def test_adx():
+def test_adx() -> None:
     candles = _to_db_candles(test_candles_10)
     result = ta.adx(candles, period=14, sequential=True)
     assert isinstance(result, np.ndarray)
     assert round(float(result[-1])) == 26
 
 
-def test_adxr():
+def test_adxr() -> None:
     candles = _to_db_candles(test_candles_19)
     single = ta.adxr(candles, period=14)
     sequence = ta.adxr(candles, period=14, sequential=True)
@@ -69,7 +71,7 @@ def test_adxr():
     assert sequence[-1] == single
 
 
-def test_alligator():
+def test_alligator() -> None:
     candles = _to_db_candles(test_candles_19)
     single = ta.alligator(candles)
     sequence = ta.alligator(candles, sequential=True)

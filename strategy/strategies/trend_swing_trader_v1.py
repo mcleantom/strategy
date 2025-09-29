@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Literal
+
 import strategy.indicators as ta
 from strategy import utils
 from strategy.strategy import Order, Strategy
@@ -10,14 +12,14 @@ class TrendSwingTrader(Strategy):
 
     @property
     def price(self) -> float:
-        return self.candles[-1]["close"]
+        return float(self.candles[-1]["close"])
 
     @property
     def adx(self) -> bool:
         return ta.adx(self.candles) > 25  # noqa: PLR2004
 
     @property
-    def trend(self):
+    def trend(self) -> Literal[0, 1, -1]:
         e1 = ta.ema(self.candles, 21)
         e2 = ta.ema(self.candles, 50)
         e3 = ta.ema(self.candles, 100)
@@ -45,7 +47,7 @@ class TrendSwingTrader(Strategy):
     def should_short(self) -> bool:
         return self.trend == -1 and self.adx
 
-    def go_short(self):
+    def go_short(self) -> Order:
         entry = self.price
         qty = (self.available_margin / entry) * 0.2
         stop_loss = entry + ta.atr(self.candles) * 2

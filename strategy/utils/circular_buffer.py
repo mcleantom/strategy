@@ -1,15 +1,18 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import TYPE_CHECKING
 
 import numpy as np
 import numpy.typing as npt
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
 
 
 class CircularBuffer:
     """Circular buffer."""
 
-    def __init__(self, shape: tuple[int], drop_at: int | None = None):
+    def __init__(self, shape: Sequence[int], drop_at: int | None = None):
         self.index = -1
         self.array = np.zeros(shape)
         self.shape = shape
@@ -17,7 +20,7 @@ class CircularBuffer:
 
     @property
     def bucket_size(self) -> int:
-        return self.array.shape[0]
+        return int(self.array.shape[0])
 
     def __str__(self) -> str:
         return str(self.array[: self.index + 1])
@@ -25,7 +28,7 @@ class CircularBuffer:
     def __len__(self) -> int:
         return self.index + 1
 
-    def __getitem__(self, i) -> npt.NDArray:
+    def __getitem__(self, i: int | slice | str) -> npt.NDArray:
         if isinstance(i, str):
             return self.array[i][: self.index + 1]
         if isinstance(i, slice):
@@ -81,7 +84,7 @@ class CircularBuffer:
         self.array[self.index] = item
 
     @staticmethod
-    def np_shift(arr: npt.NDArray, num: int, fill_value=0) -> npt.NDArray:
+    def np_shift(arr: npt.NDArray, num: int, fill_value: int = 0) -> npt.NDArray:
         result = np.empty_like(arr)
 
         if num > 0:

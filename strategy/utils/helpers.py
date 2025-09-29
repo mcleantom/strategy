@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import uuid
+from typing import TYPE_CHECKING
 
 import arrow
 import numpy as np
@@ -8,13 +9,16 @@ import numpy.typing as npt
 
 from strategy.db.candle import CandleModel
 
+if TYPE_CHECKING:
+    from collections.abc import Sequence
 
-def generate_unique_id():
+
+def generate_unique_id() -> str:
     return str(uuid.uuid4())
 
 
 def arrow_to_timestamp(arrow_time: arrow.arrow.Arrow) -> int:
-    return arrow_time.int_timestamp * 1000
+    return int(arrow_time.int_timestamp) * 1000
 
 
 def timestamp_to_arrow(timestamp: int) -> arrow.arrow.Arrow:
@@ -27,14 +31,14 @@ def timestamp_to_time(timestamp: int) -> str:
 
 def date_diff_in_days(date1: arrow.arrow.Arrow, date2: arrow.arrow.Arrow) -> int:
     dif = date2 - date1
-    return abs(dif.days)
+    return abs(int(dif.days))
 
 
 def now_to_timestamp() -> int:
-    return arrow.utcnow().int_timestamp * 1000
+    return int(arrow.utcnow().int_timestamp) * 1000
 
 
-def to_numpy_array(candles: list[CandleModel]) -> npt.NDArray:
+def to_numpy_array(candles: Sequence[CandleModel]) -> npt.NDArray:
     return np.array(
         [
             (
@@ -136,7 +140,7 @@ def slice_candles(candles: np.ndarray, *, sequential: bool) -> npt.NDArray:
     return candles
 
 
-def np_shift(arr: npt.NDArray, num: int, fill_value=0) -> npt.NDArray:
+def np_shift(arr: npt.NDArray, num: int, fill_value: float = 0) -> npt.NDArray:
     result = np.empty_like(arr)
 
     if num > 0:

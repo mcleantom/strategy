@@ -58,12 +58,12 @@ class Backtester:
         self.take_profit: float | None = None
         self.daily_returns: list[float] = []
         self.equity_curve: list[Equity] = []
-        self.candles: npt.NDArray | list = []
+        self.candles: npt.NDArray = []
         self.last_order: Order | None = None
         self.last_timestamp: int | None = None
         self.timeframe = timeframe
 
-    def backtest(self, candles: npt.NDArray):
+    def backtest(self, candles: npt.NDArray) -> None:
         # Accept lists of ORM Candle and convert to structured array
         candles = generate_candles_from_one_minute_candles(candles, self.timeframe)
         self.candles = candles
@@ -203,14 +203,14 @@ class Backtester:
             should_exit = True
         return should_exit
 
-    def exit_position(self, candle: npt.NDArray):
+    def exit_position(self, candle: npt.NDArray) -> None:
         if self.position == "long":
             self.exit_long(candle)
         else:
             self.exit_short(candle)
         self.position = None
 
-    def generate_report(self):  # pragma: no cover
+    def generate_report(self) -> None:  # pragma: no cover
         import quantstats as qs  # noqa: PLC0415
 
         qs.extend_pandas()

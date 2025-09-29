@@ -6,7 +6,7 @@ import pytest
 from strategy.utils.circular_buffer import CircularBuffer
 
 
-def test_index_error_out_of_range():
+def test_index_error_out_of_range() -> None:
     buf = CircularBuffer((3,))
     buf.array = np.zeros((3,))
     buf.append(1)
@@ -18,7 +18,7 @@ def test_index_error_out_of_range():
         _ = buf[-3]
 
 
-def test_setitem_index_error():
+def test_setitem_index_error() -> None:
     buf = CircularBuffer((3,))
     buf.array = np.zeros((3,))
     buf.append(1)
@@ -27,7 +27,7 @@ def test_setitem_index_error():
         buf[2] = 99
 
 
-def test_slice_with_negative_start_stop():
+def test_slice_with_negative_start_stop() -> None:
     buf = CircularBuffer((6,))
     buf.array = np.zeros((6,))
     for i in range(4):
@@ -37,7 +37,7 @@ def test_slice_with_negative_start_stop():
     assert result.tolist() == [2, 3]
 
 
-def test_slice_setitem_negative_indices():
+def test_slice_setitem_negative_indices() -> None:
     buf = CircularBuffer((6,))
     buf.array = np.zeros((6,))
     for i in range(4):

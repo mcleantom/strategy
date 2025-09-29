@@ -9,7 +9,7 @@ from strategy.strategy import Order, Strategy
 class ExampleStrategy(Strategy):
     """Buy and hold."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
         self.has_bought = False
 
@@ -20,7 +20,7 @@ class ExampleStrategy(Strategy):
         self.has_bought = True
         return Order(
             quantity=1,
-            price=self.store.candles.most_recent_candle.close,
+            price=float(self.store.candles.most_recent_candle.close),
             stop_loss=None,
             take_profit=None,
         )

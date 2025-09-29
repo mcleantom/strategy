@@ -45,7 +45,7 @@ class Exchange(ABC):
         """Cancels all orders for the given symbol."""
 
     @abstractmethod
-    async def cancel_order(self, symbol: str, order_id: str) -> None:
+    async def cancel_order(self, order_id: str) -> None:
         """Cancels an order."""
 
     @abstractmethod
@@ -53,5 +53,5 @@ class Exchange(ABC):
         """Gets the account balance."""
 
     @abstractmethod
-    async def _fetch_precisions(self) -> None:
+    async def _fetch_precisions(self) -> list[dict[str, str]]:
         """Gets the precisions of orders."""

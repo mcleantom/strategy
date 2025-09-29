@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from datetime import UTC, datetime, timedelta
 
 from strategy.modes.import_candles_mode import run
@@ -9,5 +11,5 @@ run(
     client_id="strategy",
     exchange="alpaca",
     symbol="AAPL",
-    start_date_str=one_year_ago.strftime("%Y-%m-%d")
+    start_date_str=one_year_ago.strftime("%Y-%m-%d"),
 )

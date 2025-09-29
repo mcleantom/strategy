@@ -1,21 +1,45 @@
 from __future__ import annotations
 
-from typing import NamedTuple
+from typing import Literal, NamedTuple, overload
 
 import numpy as np
 import numpy.typing as npt
 
 from strategy.utils.helpers import np_shift, slice_candles
 
-AG = NamedTuple("AG", ["jaw", "teeth", "lips"])
+
+class AGArray(NamedTuple):
+    jaw: np.ndarray
+    teeth: np.ndarray
+    lips: np.ndarray
 
 
+class AGScalar(NamedTuple):
+    jaw: float
+    teeth: float
+    lips: float
+
+
+@overload
+def alligator(
+    candles: npt.NDArray,
+    source_type: str = "close",
+    *,
+    sequential: Literal[True],
+) -> AGArray: ...
+@overload
+def alligator(
+    candles: npt.NDArray,
+    source_type: str = "close",
+    *,
+    sequential: Literal[False] = False,
+) -> AGScalar: ...
 def alligator(
     candles: npt.NDArray,
     source_type: str = "close",
     *,
     sequential: bool = False,
-) -> AG:
+) -> AGArray | AGScalar:
     """Alligator."""
     candles = slice_candles(candles, sequential=sequential)
     source = candles[source_type]
@@ -23,11 +47,11 @@ def alligator(
     teeth = np_shift(numpy_ewma(source, 8), 5, fill_value=np.nan)
     lips = np_shift(numpy_ewma(source, 5), 3, fill_value=np.nan)
     if sequential:
-        return AG(jaw, teeth, lips)
-    return AG(jaw[-1], teeth[-1], lips[-1])
+        return AGArray(jaw, teeth, lips)
+    return AGScalar(float(jaw[-1]), float(teeth[-1]), float(lips[-1]))
 
 
-def numpy_ewma(data: npt.NDArray, window: int):
+def numpy_ewma(data: npt.NDArray, window: int) -> npt.NDArray:
     """Exponentially Weighted Moving Average."""
     alpha = 1 / window
     n = data.shape[0]

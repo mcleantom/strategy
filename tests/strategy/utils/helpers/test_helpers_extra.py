@@ -8,14 +8,14 @@ import strategy.utils.helpers as sh
 from strategy.db.candle import CandleModel
 
 
-def test_now_to_timestamp_monotonic():
+def test_now_to_timestamp_monotonic() -> None:
     t1 = sh.now_to_timestamp()
     time.sleep(0.01)
     t2 = sh.now_to_timestamp()
     assert t2 >= t1
 
 
-def test_to_candle_from_one_row_struct_array():
+def test_to_candle_from_one_row_struct_array() -> None:
     arr = np.zeros(
         1,
         dtype=[

@@ -14,7 +14,7 @@ from strategy.utils.helpers import to_numpy_array, to_structured_array
 class BuyAndHoldStrategy(Strategy):
     """Buy and hold strategy."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
         self.has_bought = False
 
@@ -25,7 +25,7 @@ class BuyAndHoldStrategy(Strategy):
         self.has_bought = True
         return Order(
             quantity=1,
-            price=self.store.candles.most_recent_candle.close,
+            price=float(self.store.candles.most_recent_candle.close),
             stop_loss=None,
             take_profit=None,
         )
@@ -40,7 +40,7 @@ class BuyAndHoldStrategy(Strategy):
         return False
 
 
-@pytest.fixture
+@pytest.fixture  # type: ignore[misc]
 def test_candles() -> list[CandleModel]:
     return [
         CandleModel(
@@ -92,7 +92,7 @@ def test_candles() -> list[CandleModel]:
 
 def test_example_strategy(
     test_candles: list[CandleModel],
-):
+) -> None:
     backtester = Backtester(strategy=BuyAndHoldStrategy(), initial_balance=10_000)
     candles = to_numpy_array(test_candles)
     backtester.backtest(candles)
@@ -114,7 +114,7 @@ requires_db = pytest.mark.skipif(
 )
 
 
-def test_no_balance_throws(test_candles: list[CandleModel]):
+def test_no_balance_throws(test_candles: list[CandleModel]) -> None:
     backtester = Backtester(strategy=BuyAndHoldStrategy(), initial_balance=0)
     candles = to_numpy_array(test_candles)
     with pytest.raises(RuntimeError) as e:
@@ -122,7 +122,7 @@ def test_no_balance_throws(test_candles: list[CandleModel]):
     assert str(e.value) == "Ran out of money"
 
 
-def test_exit_stop_loss_long():
+def test_exit_stop_loss_long() -> None:
     backtester = Backtester(strategy=BuyAndHoldStrategy(), initial_balance=10_000)
     backtester.position = "long"
     backtester.stop_loss = 101
@@ -131,7 +131,7 @@ def test_exit_stop_loss_long():
     assert backtester.should_exit_position(candle)
 
 
-def test_exit_stop_loss_short():
+def test_exit_stop_loss_short() -> None:
     backtester = Backtester(strategy=BuyAndHoldStrategy(), initial_balance=10_000)
     backtester.position = "short"
     backtester.stop_loss = 99
@@ -140,9 +140,9 @@ def test_exit_stop_loss_short():
     assert backtester.should_exit_position(candle)
 
 
-def test_exit_short_position(test_candles: list[CandleModel]):
+def test_exit_short_position(test_candles: list[CandleModel]) -> None:
     class ShortOnceStrategy(Strategy):
-        def __init__(self):
+        def __init__(self) -> None:
             super().__init__()
             self.shorted = False
 
@@ -153,7 +153,7 @@ def test_exit_short_position(test_candles: list[CandleModel]):
             self.shorted = True
             return Order(
                 quantity=1,
-                price=self.store.candles.most_recent_candle.close,
+                price=float(self.store.candles.most_recent_candle.close),
                 stop_loss=None,
                 take_profit=None,
             )

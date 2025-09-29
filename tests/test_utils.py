@@ -5,40 +5,40 @@ import pytest
 from strategy.utils import floor_with_precision, risk_to_qty, risk_to_size, size_to_qty
 
 
-def test_floor_with_precision():
+def test_floor_with_precision() -> None:
     assert floor_with_precision(1.2399, 2) == 1.23
     assert floor_with_precision(123.999, 0) == 123.0
 
 
-def test_size_to_qty_basic():
+def test_size_to_qty_basic() -> None:
     assert size_to_qty(100.0, 50.0, precision=3) == 2.0
 
 
-def test_size_to_qty_with_fee():
+def test_size_to_qty_with_fee() -> None:
     qty = size_to_qty(100.0, 50.0, precision=3, fee_rate=0.001)
     # fee reduces position_size by 0.3%
     assert qty == floor_with_precision((100.0 * (1 - 0.003)) / 50.0, 3)
 
 
-def test_size_to_qty_invalid_inputs():
+def test_size_to_qty_invalid_inputs() -> None:
     with pytest.raises(TypeError):
         size_to_qty(100.0, float("nan"))
     with pytest.raises(TypeError):
         size_to_qty(float("nan"), 50.0)
 
 
-def test_risk_to_size_basic():
+def test_risk_to_size_basic() -> None:
     # 1% risk on 10_000, risk per qty 0.7, entry 8.6
     result = risk_to_size(10_000, 1, 0.7, 8.6)
     assert result == min(((0.01 * 10_000) / 0.7) * 8.6, 10_000)
 
 
-def test_risk_to_size_zero_risk_per_qty_raises():
+def test_risk_to_size_zero_risk_per_qty_raises() -> None:
     with pytest.raises(ValueError):
         risk_to_size(10_000, 1, 0.0, 10.0)
 
 
-def test_risk_to_qty_integration():
+def test_risk_to_qty_integration() -> None:
     qty = risk_to_qty(
         capital=10_000,
         risk_per_capital=1.0,
@@ -50,7 +50,7 @@ def test_risk_to_qty_integration():
     assert qty == 100.0
 
 
-def test_risk_to_qty_with_fee():
+def test_risk_to_qty_with_fee() -> None:
     qty = risk_to_qty(
         capital=10_000,
         risk_per_capital=1.0,

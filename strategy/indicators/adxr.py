@@ -1,11 +1,28 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal, overload
 
 import talib
 
 if TYPE_CHECKING:
     import numpy.typing as npt
+
+
+# overloads
+@overload
+def adxr(
+    candles: npt.NDArray,
+    period: int = 14,
+    *,
+    sequential: Literal[True],
+) -> npt.NDArray: ...
+@overload
+def adxr(
+    candles: npt.NDArray,
+    period: int = 14,
+    *,
+    sequential: Literal[False] = False,
+) -> float: ...
 
 
 def adxr(
@@ -18,5 +35,5 @@ def adxr(
     high = candles["high"]
     low = candles["low"]
     close = candles["close"]
-    res = talib.ADXR(high, low, close, timeperiod=period)
-    return res if sequential else res[-1]
+    res: npt.NDArray = talib.ADXR(high, low, close, timeperiod=period)
+    return res if sequential else float(res[-1])

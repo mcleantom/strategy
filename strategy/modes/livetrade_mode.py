@@ -7,6 +7,8 @@ from typing import TYPE_CHECKING, Any
 from loguru import logger
 
 if TYPE_CHECKING:
+    import numpy as np
+
     from strategy.exchange.base_exchange import Exchange
     from strategy.strategy import Order, Strategy
 
@@ -35,7 +37,7 @@ class LiveTrader:
         self.pnl: float = 0.0
         self.trades: list[dict[str, Any]] = []
 
-    async def on_candle(self):
+    async def on_candle(self) -> None:
         if self.position is None:
             if self.strategy.should_long():
                 order = self.strategy.go_long()
@@ -44,7 +46,7 @@ class LiveTrader:
                 order = self.strategy.go_short()
                 await self.enter_position(order, "short")
 
-    async def enter_position(self, order: Order, position_type: str):
+    async def enter_position(self, order: Order, position_type: str) -> None:
         current_balance = await self.exchange.get_balance()
         required_margin = order.price * order.quantity
 
@@ -72,7 +74,9 @@ class LiveTrader:
             reduce_only=False,
         )
 
-    def exit_position(self, candle):
+    async def exit_position(self, candle: np.ndarray) -> None:
+        if self.position is None:
+            raise RuntimeError("Exit position was called when position was None")
         current_price = candle["close"]
         trade_pnl = 0.0
         if self.position.type == "long":
@@ -89,7 +93,7 @@ class LiveTrader:
             f"Exiting {self.position.type} position at {current_price}, PnL: {trade_pnl}",
         )
         if self.order_id is not None:
-            self.exchange.cancel_order(self.symbol, self.order_id)
+            await self.exchange.cancel_order(self.order_id)
         self.trades.append(
             {
                 "type": self.position.type,
@@ -104,7 +108,7 @@ class LiveTrader:
         self.order_id = None
         self.position = None
 
-    def should_exit_position(self, candle):
+    def should_exit_position(self, candle: np.ndarray) -> bool:
         """Check if we should exit the current position."""
         if self.position is None:
             return False

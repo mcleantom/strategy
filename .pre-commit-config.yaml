@@ -26,6 +26,7 @@ repos:
       - id: mypy
         additional_dependencies:
         - 'pydantic[mypy]>=2.11.9'
+        - sqlalchemy==2.0.41
         args: [
           "--install-types",
           "--non-interactive",

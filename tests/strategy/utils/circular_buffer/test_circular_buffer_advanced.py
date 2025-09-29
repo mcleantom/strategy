@@ -5,7 +5,7 @@ import numpy as np
 from strategy.utils.circular_buffer import CircularBuffer
 
 
-def test_negative_index_and_bounds():
+def test_negative_index_and_bounds() -> None:
     buf = CircularBuffer((4,))
     buf.array = np.zeros((4,))
     for i in range(4):
@@ -14,7 +14,7 @@ def test_negative_index_and_bounds():
     assert buf[-2] == 3
 
 
-def test_slice_set_and_get():
+def test_slice_set_and_get() -> None:
     buf = CircularBuffer((6,))
     buf.array = np.zeros((6,))
     for i in range(6):
@@ -24,7 +24,7 @@ def test_slice_set_and_get():
     assert out.tolist() == [1, 99, 100, 4]
 
 
-def test_drop_at_shifts_and_preserves_recent_half():
+def test_drop_at_shifts_and_preserves_recent_half() -> None:
     buf = CircularBuffer((6,), drop_at=4)
     buf.array = np.zeros((6,))
     for i in range(6):

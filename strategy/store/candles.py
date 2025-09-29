@@ -14,11 +14,11 @@ if TYPE_CHECKING:
 class CandleStore:
     """Store of candles."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.candles = CircularBuffer((1000, 6), drop_at=500)
         self.candles.array = to_structured_array(self.candles.array)
 
-    def add_candle(self, candle: npt.ArrayLike):
+    def add_candle(self, candle: npt.ArrayLike) -> None:
         self.candles.append(candle)
 
     @property

@@ -3,11 +3,14 @@ from __future__ import annotations
 
 import os
 from http import HTTPStatus
-from typing import Any
+from typing import TYPE_CHECKING, Any, Self, cast
 
 import aiohttp
 
 from .base_exchange import Exchange
+
+if TYPE_CHECKING:
+    from types import TracebackType
 
 
 class AlpacaExchange(Exchange):
@@ -32,13 +35,18 @@ class AlpacaExchange(Exchange):
         }
 
     # ---- lifecycle ---------------------------------------------------------
-    async def __aenter__(self):
+    async def __aenter__(self) -> Self:
         if self._session is None:
             self._session = aiohttp.ClientSession(headers=self._headers)
             self._owns_session = True
         return self
 
-    async def __aexit__(self, exc_type, exc, tb):
+    async def __aexit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc: BaseException | None,
+        tb: TracebackType | None,
+    ) -> None:
         if self._owns_session and self._session:
             await self._session.close()
         self._session = None
@@ -50,7 +58,7 @@ class AlpacaExchange(Exchange):
             self._owns_session = True
         return self._session
 
-    async def _request(self, method: str, path: str, **kwargs) -> Any:
+    async def _request(self, method: str, path: str, **kwargs: dict[str, Any]) -> Any:
         url = f"{self.base_url}{path}"
         async with self.session.request(method, url, **kwargs) as resp:
             if resp.status >= HTTPStatus.BAD_REQUEST:
@@ -86,7 +94,7 @@ class AlpacaExchange(Exchange):
             "reduce_only": reduce_only,
         }
         data = await self._request("POST", "/orders", json=order_data)
-        return data["id"]
+        return str(data["id"])
 
     async def limit_order(
         self,
@@ -107,7 +115,7 @@ class AlpacaExchange(Exchange):
             "reduce_only": reduce_only,
         }
         data = await self._request("POST", "/orders", json=order_data)
-        return data["id"]
+        return str(data["id"])
 
     async def stop_order(
         self,
@@ -128,7 +136,7 @@ class AlpacaExchange(Exchange):
             "reduce_only": reduce_only,
         }
         data = await self._request("POST", "/orders", json=order_data)
-        return data["id"]
+        return str(data["id"])
 
     async def cancel_all_orders(self, symbol: str) -> None:
         orders: list[dict[str, Any]] = await self._request(
@@ -137,7 +145,7 @@ class AlpacaExchange(Exchange):
             json={"symbols": [symbol]},
         )
         for order in orders:
-            await self.cancel_order(symbol, order["id"])
+            await self.cancel_order(order["id"])
 
     async def cancel_order(self, order_id: str) -> None:
         await self._request("DELETE", f"/orders/{order_id}")
@@ -146,5 +154,5 @@ class AlpacaExchange(Exchange):
         account_data = await self._request("GET", "/account")
         return float(account_data["equity"])
 
-    async def _fetch_precisions(self):
-        return await self._request("GET", "/assets")
+    async def _fetch_precisions(self) -> list[dict[str, str]]:
+        return cast("list[dict[str, str]]", await self._request("GET", "/assets"))

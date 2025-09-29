@@ -16,7 +16,7 @@ from strategy.modes.import_candles_mode.drivers.base_candles_importer import (
 class AlpacaImporter(CandlesImporter):
     """Alpaca candles importer."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__(name="alpaca", count=10_000, rate_limit_per_second=2)
         self.base_url = "https://data.alpaca.markets/v2"
         self.api_key = os.environ["ALPACA_KEY"]
@@ -42,14 +42,14 @@ class AlpacaImporter(CandlesImporter):
             return self._convert_iso_to_timestamp(data["bars"][0]["t"])
         raise ValueError(f"No available data for symbol: {symbol}")
 
-    def get_available_symbols(self) -> list:
+    def get_available_symbols(self) -> list[str]:
         url = f"{self.base_url.replace('data', 'api')}/assets"
         response = requests.get(url, headers=self._get_headers(), timeout=10)
         self.validate_response(response)
         data = response.json()
         return [asset["symbol"] for asset in data if asset["tradable"]]
 
-    def _get_headers(self):
+    def _get_headers(self) -> dict[str, str]:
         """Helper method to construct the headers required for Alpaca API requests."""
         return {"APCA-API-KEY-ID": self.api_key, "APCA-API-SECRET-KEY": self.api_secret}
 

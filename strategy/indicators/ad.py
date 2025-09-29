@@ -1,11 +1,17 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal, overload
 
 import talib
 
 if TYPE_CHECKING:
     import numpy.typing as npt
+
+
+@overload
+def ad(candles: npt.NDArray, *, sequential: Literal[True]) -> npt.NDArray: ...
+@overload
+def ad(candles: npt.NDArray, *, sequential: Literal[False] = False) -> float: ...
 
 
 def ad(candles: npt.NDArray, *, sequential: bool = False) -> float | npt.NDArray:
@@ -14,5 +20,5 @@ def ad(candles: npt.NDArray, *, sequential: bool = False) -> float | npt.NDArray
     low = candles["low"]
     close = candles["close"]
     volume = candles["volume"]
-    res = talib.AD(high, low, close, volume)
-    return res if sequential else res[-1]
+    res: npt.NDArray = talib.AD(high, low, close, volume)
+    return res if sequential else float(res[-1])

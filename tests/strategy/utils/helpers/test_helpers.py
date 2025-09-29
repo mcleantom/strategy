@@ -7,7 +7,7 @@ import strategy.utils.helpers as sh
 from strategy.db.candle import CandleModel
 
 
-def test_generate_unique_id_unique_and_string():
+def test_generate_unique_id_unique_and_string() -> None:
     a = sh.generate_unique_id()
     b = sh.generate_unique_id()
     assert isinstance(a, str)
@@ -15,21 +15,21 @@ def test_generate_unique_id_unique_and_string():
     assert a != b
 
 
-def test_timestamp_conversions_roundtrip():
+def test_timestamp_conversions_roundtrip() -> None:
     ts_ms = 1_700_000_000_000
     arr = sh.timestamp_to_arrow(ts_ms)
     assert sh.arrow_to_timestamp(arr) == ts_ms
     assert isinstance(sh.timestamp_to_time(ts_ms), str)
 
 
-def test_date_diff_in_days_abs():
+def test_date_diff_in_days_abs() -> None:
     d1 = sh.timestamp_to_arrow(0)
     d2 = sh.timestamp_to_arrow(3 * 24 * 3600 * 1000)
     assert sh.date_diff_in_days(d1, d2) == 3
     assert sh.date_diff_in_days(d2, d1) == 3
 
 
-def test_to_numpy_array_and_to_structured_array():
+def test_to_numpy_array_and_to_structured_array() -> None:
     candles = [
         CandleModel(timestamp=1, open=10, close=11, high=12, low=9, volume=100),
         CandleModel(timestamp=2, open=11, close=12, high=13, low=10, volume=110),
@@ -46,13 +46,13 @@ def test_to_numpy_array_and_to_structured_array():
     assert struct[1]["close"] == 12.0
 
 
-def test_to_structured_array_invalid_shape_raises():
+def test_to_structured_array_invalid_shape_raises() -> None:
     bad = np.array([[1, 2], [3, 4]])
     with pytest.raises(ValueError):
         sh.to_structured_array(bad)
 
 
-def test_to_candle_from_struct_row_and_positional():
+def test_to_candle_from_struct_row_and_positional() -> None:
     struct = np.zeros(
         1,
         dtype=[
@@ -74,7 +74,7 @@ def test_to_candle_from_struct_row_and_positional():
     assert c2.low == 9.0
 
 
-def test_slice_candles_and_np_shift():
+def test_slice_candles_and_np_shift() -> None:
     # slice_candles
     arr = np.zeros(
         500,
