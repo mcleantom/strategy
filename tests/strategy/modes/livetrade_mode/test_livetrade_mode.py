@@ -40,7 +40,7 @@ async def test_enter_and_exit_long_flow() -> None:
     await trader.exit_position({"close": c2["close"]})
     assert trader.position is None
     assert exchange.cancelled  # type: ignore[unreachable]
-    assert exchange.cancelled[0] == ("AAPL", "ORDER-1")
+    assert exchange.cancelled[0] == ("ORDER-1",)
     assert trader.pnl > 0
 
 

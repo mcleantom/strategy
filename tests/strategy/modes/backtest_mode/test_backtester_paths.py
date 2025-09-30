@@ -50,7 +50,7 @@ class ShortOnlyStrategy(Strategy):
             take_profit=price - 10.0,
         )
 
-    def should_cancel_entry(self) -> bool:
+    def should_exit_position(self) -> bool:
         return False
 
 
@@ -119,7 +119,7 @@ def test_should_exit_conditions_long_and_short() -> None:
         def go_short(self) -> Order:
             raise NotImplementedError
 
-        def should_cancel_entry(self) -> bool:
+        def should_exit_position(self) -> bool:
             return False
 
     strat = LongStrategy()

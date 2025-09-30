@@ -36,7 +36,7 @@ class BuyAndHoldStrategy(Strategy):
     def go_short(self) -> Order:
         raise NotImplementedError
 
-    def should_cancel_entry(self) -> bool:
+    def should_exit_position(self) -> bool:
         return False
 
 
@@ -164,7 +164,7 @@ def test_exit_short_position(test_candles: list[CandleModel]) -> None:
         def go_long(self) -> Order:
             raise NotImplementedError
 
-        def should_cancel_entry(self) -> bool:
+        def should_exit_position(self) -> bool:
             return False
 
     backtester = Backtester(strategy=ShortOnceStrategy(), initial_balance=10_000)

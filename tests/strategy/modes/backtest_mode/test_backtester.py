@@ -31,7 +31,7 @@ class ExampleStrategy(Strategy):
     def go_short(self) -> Order:
         raise NotImplementedError
 
-    def should_cancel_entry(self) -> bool:
+    def should_exit_position(self) -> bool:
         return False
 
 

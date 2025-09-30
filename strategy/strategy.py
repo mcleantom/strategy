@@ -59,7 +59,7 @@ class Strategy(ABC):
         """Returns if the strategy should make a short order."""
 
     @abstractmethod
-    def should_cancel_entry(self) -> bool:
+    def should_exit_position(self) -> bool:
         """Returns if the strategy should cancel the order."""
 
     @property

@@ -37,11 +37,11 @@ class CancelStrategy(Strategy):
     def go_short(self) -> Order:
         raise NotImplementedError
 
-    def should_cancel_entry(self) -> bool:
+    def should_exit_position(self) -> bool:
         return self._should_cancel
 
 
-def test_should_cancel_entry_exits_position() -> None:
+def test_should_exit_position_exits_position() -> None:
     strat = CancelStrategy()
     bt = Backtester(strategy=strat, initial_balance=1000.0)
     candles = np.array(
@@ -76,7 +76,7 @@ def test_stop_loss_and_take_profit_both_conditions() -> None:
         def go_short(self) -> Order:
             raise NotImplementedError
 
-        def should_cancel_entry(self) -> bool:
+        def should_exit_position(self) -> bool:
             return False
 
     strat = BothExitsStrategy()

@@ -123,4 +123,4 @@ class LiveTrader:
             or (self.position.type == "short" and current_price <= self.take_profit)
         ):
             return True
-        return self.strategy.should_cancel_entry()
+        return self.strategy.should_exit_position()

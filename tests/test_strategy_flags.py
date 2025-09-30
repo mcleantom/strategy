@@ -34,7 +34,7 @@ class NoOpStrategy(Strategy):
     def go_short(self) -> Order:
         raise NotImplementedError
 
-    def should_cancel_entry(self) -> bool:
+    def should_exit_position(self) -> bool:
         return False
 
 
@@ -79,7 +79,7 @@ def test_available_margin_updates_during_backtest() -> None:
         def go_short(self) -> Order:
             raise NotImplementedError
 
-        def should_cancel_entry(self) -> bool:
+        def should_exit_position(self) -> bool:
             return False
 
     strat = MarginStrategy()

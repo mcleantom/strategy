@@ -3,7 +3,6 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Literal
 
-import pandas as pd
 from tqdm import tqdm
 
 import strategy.utils.helpers as sh
@@ -50,13 +49,13 @@ class Backtester:
     ):
         self.strategy = strategy
         self.balance: float = initial_balance
-        self.position: Literal["short" | "long"] | None = None
+        self.position: Literal["short", "long"] | None = None
         self.entry_price: float = 0.0
         self.pnl: float = 0.0
         self.trades: list[Trade] = []
         self.stop_loss: float | None = None
         self.take_profit: float | None = None
-        self.daily_returns: list[float] = []
+        self.bar_returns: list[float] = []
         self.equity_curve: list[Equity] = []
         self.candles: npt.NDArray = []
         self.last_order: Order | None = None
@@ -64,7 +63,7 @@ class Backtester:
         self.timeframe = timeframe
 
     def backtest(self, candles: npt.NDArray) -> None:
-        # Accept lists of ORM Candle and convert to structured array
+        """Runs the backtesting loop."""
         candles = generate_candles_from_one_minute_candles(candles, self.timeframe)
         self.candles = candles
 
@@ -76,11 +75,11 @@ class Backtester:
         )
         # Avoid warmup for small datasets used in unit tests
         min_warmup_candles = 300
-        warmup_candles = 0 if len(candles) < min_warmup_candles else 250
-        for i in range(warmup_candles):
+        self.warmup_candles = 0 if len(candles) < min_warmup_candles else 250
+        for i in range(self.warmup_candles):
             self.strategy.store.candles.add_candle(candles[i])
 
-        candles = candles[warmup_candles:]
+        candles = candles[self.warmup_candles :]
         progress_bar = tqdm(
             enumerate(candles),
             total=len(candles),
@@ -98,16 +97,6 @@ class Backtester:
                 self.exit_position(candle)
             if self.balance <= 0:
                 raise RuntimeError("Ran out of money")
-            prev_equity = self.equity_curve[-1].value
-            daily_return = (self.balance - prev_equity) / prev_equity
-            self.daily_returns.append(float(daily_return))
-            self.equity_curve.append(
-                Equity(
-                    value=self.balance,
-                    date=sh.timestamp_to_arrow(int(candle["timestamp"])).datetime,
-                ),
-            )
-
             progress_bar.set_postfix(
                 {"Balance": f"{self.balance:.2f}", "Trades": len(self.trades)},
             )
@@ -117,8 +106,21 @@ class Backtester:
         # Exit any open position at the last candle
         if self.position is not None and len(candles) > 0:
             self.exit_position(candles[-1])
+            self.calculate_returns(candles[-1])
+
+    def calculate_returns(self, candle: npt.NDArray) -> None:
+        equity_now = self._equity_on_bar(candle)
+        prev_equity = self.equity_curve[-1].value
+        self.bar_returns.append((equity_now - prev_equity) / prev_equity)
+        self.equity_curve.append(
+            Equity(
+                value=equity_now,
+                date=sh.timestamp_to_arrow(candle["timestamp"]).datetime,
+            ),
+        )
 
     def enter_long(self, order: Order, candle: npt.NDArray) -> None:
+        """Enters a long position."""
         self.position = "long"
         self.entry_price = float(order.price)
         self.stop_loss = order.stop_loss
@@ -127,11 +129,12 @@ class Backtester:
         self.last_timestamp = int(candle["timestamp"])
 
     def exit_long(self, candle: npt.NDArray) -> None:
+        """Exits a long position."""
         if self.last_order is None:
             raise RuntimeError(
                 "Tried to exit long position, when there was no last order",
             )
-        exit_price = float(candle["close"])
+        exit_price = self._fill_exit_price(candle)
         trade_pnl = (exit_price - self.entry_price) * float(self.last_order.quantity)
         self.pnl += trade_pnl
         self.balance += trade_pnl
@@ -150,9 +153,9 @@ class Backtester:
                 exit_timestamp=sh.timestamp_to_arrow(int(candle["timestamp"])).datetime,
             ),
         )
-        self.position = None
 
     def enter_short(self, order: Order, candle: npt.NDArray) -> None:
+        """Enters a short position."""
         self.position = "short"
         self.entry_price = float(order.price)
         self.stop_loss = order.stop_loss
@@ -161,14 +164,15 @@ class Backtester:
         self.last_timestamp = int(candle["timestamp"])
 
     def exit_short(self, candle: npt.NDArray) -> None:
+        """Exits a short position."""
         if self.last_order is None:
             raise RuntimeError(
                 "Tried to exit short position when there was no last order",
             )
-        exit_price = float(candle["close"])
+        exit_price = self._fill_exit_price(candle)
         trade_pnl = (self.entry_price - exit_price) * float(self.last_order.quantity)
         self.pnl += trade_pnl
-        self.balance -= trade_pnl  # exit_price * self.last_order.quantity
+        self.balance += trade_pnl  # exit_price * self.last_order.quantity
         self.trades.append(
             Trade(
                 type="short",
@@ -186,20 +190,25 @@ class Backtester:
         )
 
     def should_exit_position(self, candle: npt.NDArray) -> bool:
+        """Exits a position if hit a stop loss/take profit or the strategy says to exit."""
+        if self.position is None:
+            return False
         should_exit = False
+        high, low = (
+            float(candle["high"]),
+            float(candle["low"]),
+        )
         if self.position == "long":
-            price = float(candle["close"])
-            if (self.stop_loss is not None and price <= self.stop_loss) or (
-                self.take_profit is not None and price >= self.take_profit
-            ):
-                should_exit = True
-        elif self.position == "short":
-            price = float(candle["close"])
-            if (self.stop_loss is not None and price >= self.stop_loss) or (
-                self.take_profit is not None and price <= self.take_profit
-            ):
-                should_exit = True
-        if self.strategy.should_cancel_entry():
+            if self.stop_loss is not None and low <= self.stop_loss:
+                return True
+            if self.take_profit is not None and high >= self.take_profit:
+                return True
+        else:
+            if self.stop_loss is not None and high >= self.stop_loss:
+                return True
+            if self.take_profit is not None and low <= self.take_profit:
+                return True
+        if self.strategy.should_exit_position():
             should_exit = True
         return should_exit
 
@@ -210,18 +219,33 @@ class Backtester:
             self.exit_short(candle)
         self.position = None
 
-    def generate_report(self) -> None:  # pragma: no cover
-        import quantstats as qs  # noqa: PLC0415
-
-        qs.extend_pandas()
-        dates = [
-            sh.timestamp_to_arrow(int(candle["timestamp"])).datetime
-            for candle in self.candles
-        ]
-        returns = pd.Series(self.daily_returns, index=pd.to_datetime(dates))
-        qs.reports.html(
-            returns,
-            output="backtest_Report.html",
-            title="backtest performance",
+    def _fill_exit_price(self, candle: npt.NDArray) -> float:
+        high, low, close = (
+            float(candle["high"]),
+            float(candle["low"]),
+            float(candle["close"]),
         )
-        qs.reports.full(returns)
+        if self.position == "long":
+            if (
+                self.stop_loss is not None and low <= self.stop_loss
+            ):  # SL first or TP first? choose a policy
+                return float(self.stop_loss)
+            if self.take_profit is not None and high >= self.take_profit:
+                return float(self.take_profit)
+            return close
+        if self.stop_loss is not None and high >= self.stop_loss:
+            return float(self.stop_loss)
+        if self.take_profit is not None and low <= self.take_profit:
+            return float(self.take_profit)
+        return close
+
+    def _equity_on_bar(self, candle: npt.NDArray) -> float:
+        close = float(candle["close"])
+        u_pnl = 0.0
+        if self.position and self.last_order:
+            qty = float(self.last_order.quantity)
+            if self.position == "long":
+                u_pnl = (close - self.entry_price) * qty
+            else:
+                u_pnl = (self.entry_price - close) * qty
+        return self.balance + u_pnl

@@ -62,5 +62,5 @@ class TrendSwingTrader(Strategy):
             take_profit=take_profit,
         )
 
-    def should_cancel_entry(self) -> bool:
+    def should_exit_position(self) -> bool:
         return False
