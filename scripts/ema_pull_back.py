@@ -3,14 +3,14 @@ from __future__ import annotations
 import asyncio
 from dataclasses import dataclass
 
-from sqlalchemy import select
+import arrow
+from loguru import logger
 
-from strategy.db import CandleModel
-from strategy.db.base import AsyncSessionLocal
 from strategy.indicators import atr, ema
+from strategy.models.enums import ETimeframe
 from strategy.modes.backtest_mode import Backtester
 from strategy.strategy import Order, Strategy
-from strategy.utils.helpers import to_numpy_array
+from strategy.utils.helpers import arrow_to_timestamp
 
 
 @dataclass
@@ -187,18 +187,14 @@ async def main() -> None:
     strategy = EMAPullbackV1(cfg=cfg)
     backtester = Backtester(
         strategy=strategy,
+        symbol="AAPL",
         initial_balance=10_000,
+        timeframe=ETimeframe.MINUTE_1,
+        start_ts=arrow_to_timestamp(arrow.get("1990-01-01", "YYYY-MM-DD")),
+        end_ts=arrow_to_timestamp(arrow.get("2025-01-02", "YYYY-MM-DD")),
     )
-    stmt = (
-        select(CandleModel)
-        .where(CandleModel.symbol == "AAPL")
-        .order_by(CandleModel.timestamp)
-    )
-    async with AsyncSessionLocal() as session:
-        result = await session.execute(stmt)
-    db_candles = result.scalars().all()
-    candles = to_numpy_array(db_candles)
-    backtester.backtest(candles)
+    await backtester.backtest_stream()
+    logger.info(backtester.balance)
 
 
 if __name__ == "__main__":

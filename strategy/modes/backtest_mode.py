@@ -3,11 +3,16 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Literal
 
+import arrow
 from tqdm import tqdm
+from tqdm.asyncio import tqdm as tqdm_async
 
 import strategy.utils.helpers as sh
 from strategy.models.enums import ETimeframe
 from strategy.modes.import_candles_mode import generate_candles_from_one_minute_candles
+from strategy.utils.candles_chunk_loader import CandleChunkLoader
+from strategy.utils.helpers import arrow_to_timestamp
+from strategy.utils.timeframe_aggrigator import TimeframeAggregator
 
 if TYPE_CHECKING:
     from datetime import datetime
@@ -44,10 +49,14 @@ class Backtester:
     def __init__(
         self,
         strategy: Strategy,
+        symbol: str,
         initial_balance: float = 100_000,
         timeframe: ETimeframe = ETimeframe.MINUTE_1,
+        start_ts: int = arrow_to_timestamp(arrow.get("2025-01-01", "YYYY-MM-DD")),
+        end_ts: int = arrow_to_timestamp(arrow.get("2025-01-02", "YYYY-MM-DD")),
     ):
         self.strategy = strategy
+        self.symbol = symbol
         self.balance: float = initial_balance
         self.position: Literal["short", "long"] | None = None
         self.entry_price: float = 0.0
@@ -61,6 +70,105 @@ class Backtester:
         self.last_order: Order | None = None
         self.last_timestamp: int | None = None
         self.timeframe = timeframe
+        self.start_ts = start_ts
+        self.end_ts = end_ts
+
+    async def backtest_stream(  # noqa: C901, PLR0912, PLR0915
+        self,
+        warmup_bars: int | None = None,
+        *,
+        show_progress: bool = True,
+    ) -> None:
+        """Backtest the strategy using a stream of candles."""
+        chunker = CandleChunkLoader(
+            symbol=self.symbol,
+            start_ts=self.start_ts,
+            end_ts=self.end_ts,
+            limit=100_000,
+            overlap=0,
+        )
+        aggregator = TimeframeAggregator(self.timeframe)
+
+        if warmup_bars is None:
+            warmup_bars = 250
+
+        warmed = 0
+        processed = 0
+
+        progress = None
+        if show_progress:
+            num = self.timeframe.to_minutes()
+            total_1m = await chunker.count()
+            total_agg = total_1m // num
+            warmup = warmup_bars or 250
+            total_tradable = max(0, total_agg - warmup)
+            progress = tqdm_async(
+                total=total_tradable,
+                desc="Backtesting",
+                unit="bars",
+                dynamic_ncols=True,
+                mininterval=0.5,
+                leave=True,
+            )
+
+        async for one_min_chunk in chunker:
+            agg_chunk = aggregator.feed_chunk(one_min_chunk)
+            if len(agg_chunk) == 0:
+                continue
+
+            if not self.equity_curve:
+                self.equity_curve.append(
+                    Equity(
+                        value=self.balance,
+                        date=sh.timestamp_to_arrow(
+                            int(agg_chunk["timestamp"][0]),
+                        ).datetime,
+                    ),
+                )
+
+            if warmed < warmup_bars:
+                need = warmup_bars - warmed
+                take = min(need, len(agg_chunk))
+                if take:
+                    for i in range(take):
+                        self.strategy.store.candles.add_candle(agg_chunk[i])
+                    warmed += take
+                start = take
+            else:
+                start = 0
+
+            tradable = agg_chunk[start:]
+            if len(tradable) == 0:
+                continue
+
+            for candle in tradable:
+                self.strategy.store.candles.add_candle(candle)
+                self.strategy.available_margin = self.balance
+
+                if self.strategy.should_long() and self.position is None:
+                    self.enter_long(self.strategy.go_long(), candle)
+                elif self.strategy.should_short() and self.position is None:
+                    self.enter_short(self.strategy.go_short(), candle)
+
+                if self.should_exit_position(candle) and self.position is not None:
+                    self.exit_position(candle)
+
+                if self.balance <= 0:
+                    raise RuntimeError("Ran out of money")
+
+                self.calculate_returns(candle)
+
+            processed += len(tradable)
+            if progress is not None:
+                progress.update(len(tradable))
+
+        if progress is not None:
+            progress.close()
+
+        if self.position is not None and len(self.strategy.store.candles.candles) > 0:
+            last = self.strategy.store.candles.candles[-1]
+            self.exit_position(last)
+            self.calculate_returns(last)
 
     def backtest(self, candles: npt.NDArray) -> None:
         """Runs the backtesting loop."""
@@ -73,7 +181,6 @@ class Backtester:
                 date=sh.timestamp_to_arrow(int(candles["timestamp"][0])).datetime,
             ),
         )
-        # Avoid warmup for small datasets used in unit tests
         min_warmup_candles = 300
         self.warmup_candles = 0 if len(candles) < min_warmup_candles else 250
         for i in range(self.warmup_candles):
@@ -172,7 +279,7 @@ class Backtester:
         exit_price = self._fill_exit_price(candle)
         trade_pnl = (self.entry_price - exit_price) * float(self.last_order.quantity)
         self.pnl += trade_pnl
-        self.balance += trade_pnl  # exit_price * self.last_order.quantity
+        self.balance += trade_pnl
         self.trades.append(
             Trade(
                 type="short",
@@ -226,9 +333,7 @@ class Backtester:
             float(candle["close"]),
         )
         if self.position == "long":
-            if (
-                self.stop_loss is not None and low <= self.stop_loss
-            ):  # SL first or TP first? choose a policy
+            if self.stop_loss is not None and low <= self.stop_loss:
                 return float(self.stop_loss)
             if self.take_profit is not None and high >= self.take_profit:
                 return float(self.take_profit)
