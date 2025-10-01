@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections import deque
+from math import inf
 from typing import TYPE_CHECKING
 
 import numpy as np
@@ -21,8 +22,24 @@ class TimeframeAggregator:
         self.num = timeframe.to_minutes()
         self.buf: deque[np.void] = deque()
         self.dtype = None
+        self.k: int = 0
+        self.ts0: int = 0
+        self.candle_open: float = 0.0
+        self.candle_high: float = -inf
+        self.candle_low: float = inf
+        self.candle_volume: float = 0.0
+        self.candle_close: float = 0.0
 
-    def feed_chunk(self, one_min_chunk: npt.NDArray) -> npt.NDArray:
+    def _reset(self) -> None:
+        self.k = 0
+        self.ts0 = 0
+        self.candle_open = 0.0
+        self.candle_high = -inf
+        self.candle_low = inf
+        self.candle_volume = 0.0
+        self.candle_close = 0.0
+
+    def feed_chunk(self, chunk: npt.NDArray) -> npt.NDArray:
         """Feed a chunk of 1m candles.
 
         Feed a chunk of 1m candles (structured array with fields:
@@ -30,27 +47,50 @@ class TimeframeAggregator:
         Returns a structured array of aggregated bars *completed* within this chunk.
         """
         if self.dtype is None:
-            self.dtype = one_min_chunk.dtype
+            self.dtype = chunk.dtype
+        if self.num == 1:
+            return chunk
 
         out: list[tuple[float, float, float, float, float, float]] = []
 
-        for i in range(len(one_min_chunk)):
-            c = one_min_chunk[i]
-            self.buf.append(c)
-            if len(self.buf) == self.num:
-                tmp = np.array(list(self.buf), dtype=self.dtype)
-                aggregated = (
-                    float(tmp["timestamp"][0]),
-                    float(tmp["open"][0]),
-                    float(tmp["close"][-1]),
-                    float(tmp["high"].max()),
-                    float(tmp["low"].min()),
-                    float(tmp["volume"].sum()),
-                )
-                out.append(aggregated)
-                for _ in range(self.num):
-                    self.buf.popleft()
+        ts = chunk["timestamp"]
+        candle_open = chunk["open"]
+        candle_close = chunk["close"]
+        candle_high = chunk["high"]
+        candle_low = chunk["low"]
+        candle_volume = chunk["volume"]
 
-        if not out:
-            return np.empty((0,), dtype=self.dtype)
-        return np.array(out, dtype=self.dtype)
+        for i in range(len(chunk)):
+            if self.k == 0:
+                self.ts0 = int(ts[i])
+                self.candle_open = float(candle_open[i])
+                self.candle_high = float(candle_high[i])
+                self.candle_low = float(candle_low[i])
+                self.candle_volume = float(candle_volume[i])
+                self.candle_close = float(candle_close[i])
+                self.k = 1
+            else:
+                if candle_high[i] > self.candle_high:
+                    self.candle_high = float(candle_high[i])
+                if candle_low[i] < self.candle_low:
+                    self.candle_low = float(candle_low[i])
+                self.candle_volume += float(candle_volume[i])
+                self.candle_close = float(candle_close[i])
+                self.k += 1
+
+            if self.k == self.num:
+                out.append(
+                    (
+                        self.ts0,
+                        self.candle_open,
+                        self.candle_close,
+                        self.candle_high,
+                        self.candle_low,
+                        self.candle_volume,
+                    ),
+                )
+                self._reset()
+
+        return (
+            np.array(out, dtype=self.dtype) if out else np.empty((0,), dtype=self.dtype)
+        )

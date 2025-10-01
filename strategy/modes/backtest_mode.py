@@ -12,6 +12,7 @@ from strategy.models.enums import ETimeframe
 from strategy.modes.import_candles_mode import generate_candles_from_one_minute_candles
 from strategy.utils.candles_chunk_loader import CandleChunkLoader
 from strategy.utils.helpers import arrow_to_timestamp
+from strategy.utils.prefetch_stream import PrefetchStream
 from strategy.utils.timeframe_aggrigator import TimeframeAggregator
 
 if TYPE_CHECKING:
@@ -111,64 +112,65 @@ class Backtester:
                 leave=True,
             )
 
-        async for one_min_chunk in chunker:
-            agg_chunk = aggregator.feed_chunk(one_min_chunk)
-            if len(agg_chunk) == 0:
-                continue
+        async with PrefetchStream(chunker, prefetch=3) as stream:
+            async for one_min_chunk in stream:
+                agg_chunk = aggregator.feed_chunk(one_min_chunk)
+                if len(agg_chunk) == 0:
+                    continue
 
-            if not self.equity_curve:
-                self.equity_curve.append(
-                    Equity(
-                        value=self.balance,
-                        date=sh.timestamp_to_arrow(
-                            int(agg_chunk["timestamp"][0]),
-                        ).datetime,
-                    ),
-                )
+                if not self.equity_curve:
+                    self.equity_curve.append(
+                        Equity(
+                            value=self.balance,
+                            date=sh.timestamp_to_arrow(
+                                int(agg_chunk["timestamp"][0]),
+                            ).datetime,
+                        ),
+                    )
 
-            if warmed < warmup_bars:
-                need = warmup_bars - warmed
-                take = min(need, len(agg_chunk))
-                if take:
-                    for i in range(take):
-                        self.strategy.store.candles.add_candle(agg_chunk[i])
-                    warmed += take
-                start = take
-            else:
-                start = 0
+                if warmed < warmup_bars:
+                    need = warmup_bars - warmed
+                    take = min(need, len(agg_chunk))
+                    if take:
+                        for i in range(take):
+                            self.strategy.store.candles.add_candle(agg_chunk[i])
+                        warmed += take
+                    start = take
+                else:
+                    start = 0
 
-            tradable = agg_chunk[start:]
-            if len(tradable) == 0:
-                continue
+                tradable = agg_chunk[start:]
+                if len(tradable) == 0:
+                    continue
 
-            for candle in tradable:
-                self.strategy.store.candles.add_candle(candle)
-                self.strategy.available_margin = self.balance
+                for candle in tradable:
+                    self.strategy.store.candles.add_candle(candle)
+                    self.strategy.available_margin = self.balance
 
-                if self.strategy.should_long() and self.position is None:
-                    self.enter_long(self.strategy.go_long(), candle)
-                elif self.strategy.should_short() and self.position is None:
-                    self.enter_short(self.strategy.go_short(), candle)
+                    if self.strategy.should_long() and self.position is None:
+                        self.enter_long(self.strategy.go_long(), candle)
+                    elif self.strategy.should_short() and self.position is None:
+                        self.enter_short(self.strategy.go_short(), candle)
 
-                if self.should_exit_position(candle) and self.position is not None:
-                    self.exit_position(candle)
+                    if self.should_exit_position(candle) and self.position is not None:
+                        self.exit_position(candle)
 
-                if self.balance <= 0:
-                    raise RuntimeError("Ran out of money")
+                    if self.balance <= 0:
+                        raise RuntimeError("Ran out of money")
 
-                self.calculate_returns(candle)
+                    self.calculate_returns(candle)
 
-            processed += len(tradable)
+                processed += len(tradable)
+                if progress is not None:
+                    progress.update(len(tradable))
+
             if progress is not None:
-                progress.update(len(tradable))
+                progress.close()
 
-        if progress is not None:
-            progress.close()
-
-        if self.position is not None and len(self.strategy.store.candles.candles) > 0:
-            last = self.strategy.store.candles.candles[-1]
-            self.exit_position(last)
-            self.calculate_returns(last)
+            if self.position is not None and len(self.strategy.store.candles.candles) > 0:
+                last = self.strategy.store.candles.candles[-1]
+                self.exit_position(last)
+                self.calculate_returns(last)
 
     def backtest(self, candles: npt.NDArray) -> None:
         """Runs the backtesting loop."""

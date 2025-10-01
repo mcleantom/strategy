@@ -17,7 +17,7 @@ if TYPE_CHECKING:
 
 @dataclass
 class CandleChunkLoader:
-    """Async loader that yields *ordered* 1m candles in chunks without loading everything into memory."""
+    """Async loader that yields ordered 1m candles in chunks."""
 
     symbol: str
     start_ts: int
@@ -29,10 +29,17 @@ class CandleChunkLoader:
         last_ts = self.start_ts - 1
         symbol = self.symbol
 
-        while True:
-            async with AsyncSessionLocal() as session:
+        async with AsyncSessionLocal() as session:
+            while True:
                 stmt = (
-                    select(CandleModel)
+                    select(
+                        CandleModel.timestamp,
+                        CandleModel.open,
+                        CandleModel.close,
+                        CandleModel.high,
+                        CandleModel.low,
+                        CandleModel.volume,
+                    )
                     .where(
                         CandleModel.symbol == symbol,
                         CandleModel.timeframe == "1m",
@@ -40,48 +47,48 @@ class CandleChunkLoader:
                         *(
                             []
                             if self.end_ts is None
-                            else [CandleModel.timestamp <= self.end_ts]
-                        ),
+                            else [CandleModel.timestamp < self.end_ts]
+                        ),  # half-open
                     )
                     .order_by(asc(CandleModel.timestamp))
                     .limit(self.limit)
                 )
                 result = await session.execute(stmt)
-                rows = result.scalars().all()
+                rows = result.all()
 
-            if not rows:
-                break
+                if not rows:
+                    break
 
-            struct_dtype = np.dtype(
-                [
-                    ("timestamp", "i8"),
-                    ("open", "f8"),
-                    ("close", "f8"),
-                    ("high", "f8"),
-                    ("low", "f8"),
-                    ("volume", "f8"),
-                ],
-            )
+                struct_dtype = np.dtype(
+                    [
+                        ("timestamp", "i8"),
+                        ("open", "f8"),
+                        ("close", "f8"),
+                        ("high", "f8"),
+                        ("low", "f8"),
+                        ("volume", "f8"),
+                    ],
+                )
 
-            out = np.empty(len(rows), dtype=struct_dtype)
+                out = np.empty(len(rows), dtype=struct_dtype)
 
-            for i, r in enumerate(rows):
-                out["timestamp"][i] = int(r.timestamp)
-                out["open"][i] = float(r.open)
-                out["close"][i] = float(r.close)
-                out["high"][i] = float(r.high)
-                out["low"][i] = float(r.low)
-                out["volume"][i] = float(r.volume)
+                for i, r in enumerate(rows):
+                    out["timestamp"][i] = int(r.timestamp)
+                    out["open"][i] = float(r.open)
+                    out["close"][i] = float(r.close)
+                    out["high"][i] = float(r.high)
+                    out["low"][i] = float(r.low)
+                    out["volume"][i] = float(r.volume)
 
-            yield out
+                yield out
 
-            last_ts = int(out["timestamp"][-1])
+                last_ts = int(out["timestamp"][-1])
 
-            if self.overlap > 0:
-                last_ts -= self.overlap * 60_000
+                if self.overlap > 0:
+                    last_ts -= self.overlap * 60_000
 
-            if self.end_ts is not None and last_ts >= self.end_ts:
-                break
+                if self.end_ts is not None and last_ts >= self.end_ts:
+                    break
 
     async def count(self) -> int:
         """Count the number of candles in the database."""
