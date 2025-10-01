@@ -6,7 +6,6 @@ from typing import TYPE_CHECKING, Any
 import arrow
 import numpy as np
 import numpy.typing as npt
-import pydash
 from loguru import logger
 from sqlalchemy import asc, or_
 from sqlalchemy.dialects.postgresql import insert
@@ -188,56 +187,47 @@ def _fill_absent_candles(
     start_timestamp: int,
     end_timestamp: int,
 ) -> list[dict[str, str | Any]]:
-    symbol = temp_candles[0]["symbol"]
-    exchange = temp_candles[0]["exchange"]
-    candles: list[dict[str, str | float]] = []
+    logger.info(
+        f"Filling absent candles for {temp_candles[0]['symbol']} from {timestamp_to_time(start_timestamp)} "
+        f"to {timestamp_to_time(end_timestamp)}",
+    )
+    ts_to_candle = {int(c["timestamp"]): c for c in temp_candles}
     first_candle = temp_candles[0]
+    symbol = first_candle["symbol"]
+    exchange = first_candle["exchange"]
+
+    step = 60_000
+    last_ts = end_timestamp
+    count = ((last_ts - start_timestamp) // step) + 1
+
+    candles: list[dict[str, str | float]] = []
     started = False
-    loop_length = ((end_timestamp - start_timestamp) / 60_000) + 1
+    last_close: float | None = None
+    first_open = float(first_candle["open"])
 
-    for _ in range(int(loop_length)):
-        candle_for_timestamp = pydash.find(
-            temp_candles,
-            lambda c, timestamp=start_timestamp: c["timestamp"] == timestamp,
-        )
-
-        if candle_for_timestamp is None:
-            if started:
-                last_close = candles[-1]["close"]
-                candles.append(
-                    {
-                        "id": generate_unique_id(),
-                        "exchange": exchange,
-                        "symbol": symbol,
-                        "timeframe": "1m",
-                        "timestamp": start_timestamp,
-                        "open": last_close,
-                        "high": last_close,
-                        "low": last_close,
-                        "close": last_close,
-                        "volume": 0,
-                    },
-                )
-            else:
-                candles.append(
-                    {
-                        "id": generate_unique_id(),
-                        "exchange": exchange,
-                        "symbol": symbol,
-                        "timeframe": "1m",
-                        "timestamp": start_timestamp,
-                        "open": first_candle["open"],
-                        "high": first_candle["open"],
-                        "low": first_candle["open"],
-                        "close": first_candle["open"],
-                        "volume": 0,
-                    },
-                )
+    ts = start_timestamp
+    for _ in range(count):
+        c = ts_to_candle.get(ts)
+        if c is None:
+            oc = last_close if started and last_close is not None else first_open
+            c = {
+                "id": generate_unique_id(),
+                "exchange": exchange,
+                "symbol": symbol,
+                "timeframe": "1m",
+                "timestamp": ts,
+                "open": oc,
+                "high": oc,
+                "low": oc,
+                "close": oc,
+                "volume": 0,
+            }
         else:
             started = True
-            candles.append(candle_for_timestamp)
+        candles.append(c)
+        last_close = float(c["close"])
+        ts += step
 
-        start_timestamp += 60_000
     return candles
 
 
