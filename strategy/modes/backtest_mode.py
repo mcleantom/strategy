@@ -209,6 +209,7 @@ class Backtester:
             progress_bar.set_postfix(
                 {"Balance": f"{self.balance:.2f}", "Trades": len(self.trades)},
             )
+            self.calculate_returns(candle)
 
         progress_bar.close()
 

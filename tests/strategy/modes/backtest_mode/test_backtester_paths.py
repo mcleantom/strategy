@@ -76,13 +76,14 @@ def test_warmup_path_and_short_flow_with_exit() -> None:
         strategy=strat,
         initial_balance=1_000.0,
         timeframe=ETimeframe.MINUTE_1,
+        symbol="AAPL",
     )
     bt.backtest(candles)
 
     # We should have at least one short trade closed when price drops
     assert any(t.type == "short" for t in bt.trades)
     # Equity curve should be populated for each candle post-warmup
-    assert len(bt.equity_curve) >= (350 - 250)
+    assert len(bt.equity_curve) == len(candles) - bt.warmup_candles + 2
 
 
 def test_should_exit_conditions_long_and_short() -> None:
@@ -123,7 +124,11 @@ def test_should_exit_conditions_long_and_short() -> None:
             return False
 
     strat = LongStrategy()
-    bt = Backtester(strategy=strat, initial_balance=1_000.0)
+    bt = Backtester(
+        strategy=strat,
+        initial_balance=1_000.0,
+        symbol="AAPL",
+    )
     bt.backtest(candles)
 
     # we should have a long trade closed by the end

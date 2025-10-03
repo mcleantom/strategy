@@ -37,7 +37,11 @@ class ExampleStrategy(Strategy):
 
 def test_buy_short() -> None:
     strategy = ExampleStrategy()
-    backtester = Backtester(strategy, initial_balance=1000)
+    backtester = Backtester(
+        strategy,
+        initial_balance=1000,
+        symbol="AAPL",
+    )
     order = Order(quantity=10, price=100)
     # Use structured array rows in place of ORM Candle for backtester methods
     dtype = [

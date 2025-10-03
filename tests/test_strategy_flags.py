@@ -83,7 +83,7 @@ def test_available_margin_updates_during_backtest() -> None:
             return False
 
     strat = MarginStrategy()
-    bt = Backtester(strategy=strat, initial_balance=500.0)
+    bt = Backtester(strategy=strat, initial_balance=500.0, symbol="AAPL")
     candles = np.array([_mk_candle(0, 10.0), _mk_candle(60_000, 10.0)])
     bt.backtest(candles)
     # _available_margin should reflect last loop balance at least once

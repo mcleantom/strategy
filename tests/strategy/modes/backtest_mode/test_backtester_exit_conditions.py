@@ -43,7 +43,7 @@ class CancelStrategy(Strategy):
 
 def test_should_exit_position_exits_position() -> None:
     strat = CancelStrategy()
-    bt = Backtester(strategy=strat, initial_balance=1000.0)
+    bt = Backtester(strategy=strat, initial_balance=1000.0, symbol="AAPL")
     candles = np.array(
         [
             _mk_candle(0, 100.0),
@@ -80,7 +80,7 @@ def test_stop_loss_and_take_profit_both_conditions() -> None:
             return False
 
     strat = BothExitsStrategy()
-    bt = Backtester(strategy=strat, initial_balance=1000.0)
+    bt = Backtester(strategy=strat, initial_balance=1000.0, symbol="AAPL")
     # Price hits take profit
     candles = np.array(
         [

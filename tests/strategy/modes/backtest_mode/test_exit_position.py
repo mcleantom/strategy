@@ -72,7 +72,7 @@ def test_long_pnl(
     expected_balance: float,
 ) -> None:
     strat = NoopStrategy()
-    bt = Backtester(strat, initial_balance=1000.0)
+    bt = Backtester(strat, initial_balance=1000.0, symbol="AAPL")
 
     enter_c = candle(1, entry, entry)
     exit_c = candle(2, exit_, exit_)
@@ -104,7 +104,7 @@ def test_short_pnl(
     expected_balance: float,
 ) -> None:
     strat = NoopStrategy()
-    bt = Backtester(strat, initial_balance=1000.0)
+    bt = Backtester(strat, initial_balance=1000.0, symbol="AAPL")
 
     enter_c = candle(1, entry, entry)
     exit_c = candle(2, exit_, exit_)

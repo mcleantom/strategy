@@ -93,7 +93,11 @@ def test_candles() -> list[CandleModel]:
 def test_example_strategy(
     test_candles: list[CandleModel],
 ) -> None:
-    backtester = Backtester(strategy=BuyAndHoldStrategy(), initial_balance=10_000)
+    backtester = Backtester(
+        strategy=BuyAndHoldStrategy(),
+        initial_balance=10_000,
+        symbol="AAPL",
+    )
     candles = to_numpy_array(test_candles)
     backtester.backtest(candles)
 
@@ -115,7 +119,9 @@ requires_db = pytest.mark.skipif(
 
 
 def test_no_balance_throws(test_candles: list[CandleModel]) -> None:
-    backtester = Backtester(strategy=BuyAndHoldStrategy(), initial_balance=0)
+    backtester = Backtester(
+        strategy=BuyAndHoldStrategy(), initial_balance=0, symbol="AAPL"
+    )
     candles = to_numpy_array(test_candles)
     with pytest.raises(RuntimeError) as e:
         backtester.backtest(candles)
@@ -123,7 +129,11 @@ def test_no_balance_throws(test_candles: list[CandleModel]) -> None:
 
 
 def test_exit_stop_loss_long() -> None:
-    backtester = Backtester(strategy=BuyAndHoldStrategy(), initial_balance=10_000)
+    backtester = Backtester(
+        strategy=BuyAndHoldStrategy(),
+        initial_balance=10_000,
+        symbol="AAPL",
+    )
     backtester.position = "long"
     backtester.stop_loss = 101
     close = 100
@@ -132,7 +142,11 @@ def test_exit_stop_loss_long() -> None:
 
 
 def test_exit_stop_loss_short() -> None:
-    backtester = Backtester(strategy=BuyAndHoldStrategy(), initial_balance=10_000)
+    backtester = Backtester(
+        strategy=BuyAndHoldStrategy(),
+        initial_balance=10_000,
+        symbol="AAPL",
+    )
     backtester.position = "short"
     backtester.stop_loss = 99
     close = 100
@@ -167,7 +181,11 @@ def test_exit_short_position(test_candles: list[CandleModel]) -> None:
         def should_exit_position(self) -> bool:
             return False
 
-    backtester = Backtester(strategy=ShortOnceStrategy(), initial_balance=10_000)
+    backtester = Backtester(
+        strategy=ShortOnceStrategy(),
+        initial_balance=10_000,
+        symbol="AAPL",
+    )
     candles = to_numpy_array(test_candles)
 
     backtester.backtest(candles)
