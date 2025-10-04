@@ -1,43 +1,16 @@
 from __future__ import annotations
 
-import os
+from collections.abc import Awaitable, Callable
 
 import numpy as np
 import pytest
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from strategy.db.candle import CandleModel
 from strategy.modes.backtest_mode import Backtester
 from strategy.strategy import Order, Strategy
-from strategy.utils.helpers import to_numpy_array, to_structured_array
-
-
-class BuyAndHoldStrategy(Strategy):
-    """Buy and hold strategy."""
-
-    def __init__(self) -> None:
-        super().__init__()
-        self.has_bought = False
-
-    def should_long(self) -> bool:
-        return not self.has_bought
-
-    def go_long(self) -> Order:
-        self.has_bought = True
-        return Order(
-            quantity=1,
-            price=float(self.store.candles.most_recent_candle.close),
-            stop_loss=None,
-            take_profit=None,
-        )
-
-    def should_short(self) -> bool:
-        return False
-
-    def go_short(self) -> Order:
-        raise NotImplementedError
-
-    def should_exit_position(self) -> bool:
-        return False
+from strategy.utils.helpers import to_structured_array
+from tests.strategies import BuyAndHoldStrategy
 
 
 @pytest.fixture  # type: ignore[misc]
@@ -52,7 +25,7 @@ def test_candles() -> list[CandleModel]:
             volume=1000,
             exchange="NYSE",
             symbol="AAPL",
-            timeframe="1D",
+            timeframe="1m",
         ),
         CandleModel(
             timestamp=2,
@@ -63,7 +36,7 @@ def test_candles() -> list[CandleModel]:
             volume=1000,
             exchange="NYSE",
             symbol="AAPL",
-            timeframe="1D",
+            timeframe="1m",
         ),
         CandleModel(
             timestamp=3,
@@ -74,7 +47,7 @@ def test_candles() -> list[CandleModel]:
             volume=1000,
             exchange="NYSE",
             symbol="AAPL",
-            timeframe="1D",
+            timeframe="1m",
         ),
         CandleModel(
             timestamp=4,
@@ -85,26 +58,34 @@ def test_candles() -> list[CandleModel]:
             volume=1000,
             exchange="NYSE",
             symbol="AAPL",
-            timeframe="1D",
+            timeframe="1m",
         ),
     ]
 
 
-def test_example_strategy(
+async def test_example_strategy(
     test_candles: list[CandleModel],
+    save_candles: Callable[[list[CandleModel]], Awaitable[None]],
+    db_session: AsyncSession,
 ) -> None:
+    entry_price = test_candles[0].close
+    exit_price = test_candles[-1].close
+    entry_ts = int(test_candles[0].timestamp)
+    exit_ts = int(test_candles[-1].timestamp)
+    await save_candles(test_candles)
     backtester = Backtester(
         strategy=BuyAndHoldStrategy(),
         initial_balance=10_000,
         symbol="AAPL",
+        start_ts=entry_ts,
+        end_ts=exit_ts + 1,
     )
-    candles = to_numpy_array(test_candles)
-    backtester.backtest(candles)
+    await backtester.backtest_stream(db=db_session, warmup_bars=0)
 
     assert len(backtester.trades) == 1
     assert backtester.trades[0].type == "long"
-    assert backtester.trades[0].entry_price == candles[0]["close"]
-    assert backtester.trades[0].exit_price == candles[-1]["close"]
+    assert backtester.trades[0].entry_price == entry_price
+    assert backtester.trades[0].exit_price == exit_price
     # PnL is exit - entry for long
     assert (
         backtester.pnl
@@ -112,23 +93,27 @@ def test_example_strategy(
     )
 
 
-requires_db = pytest.mark.skipif(
-    os.getenv("LIVE_DB") != "1",
-    reason="Skipping DB-dependent test",
-)
-
-
-def test_no_balance_throws(test_candles: list[CandleModel]) -> None:
+async def test_no_balance_throws(
+    test_candles: list[CandleModel],
+    save_candles: Callable[[list[CandleModel]], Awaitable[None]],
+    db_session: AsyncSession,
+) -> None:
+    start_ts = int(test_candles[0].timestamp)
+    end_ts = int(test_candles[-1].timestamp)
+    await save_candles(test_candles)
     backtester = Backtester(
-        strategy=BuyAndHoldStrategy(), initial_balance=0, symbol="AAPL"
+        strategy=BuyAndHoldStrategy(),
+        initial_balance=0,
+        symbol="AAPL",
+        start_ts=start_ts,
+        end_ts=end_ts + 1,
     )
-    candles = to_numpy_array(test_candles)
     with pytest.raises(RuntimeError) as e:
-        backtester.backtest(candles)
+        await backtester.backtest_stream(db=db_session, warmup_bars=0)
     assert str(e.value) == "Ran out of money"
 
 
-def test_exit_stop_loss_long() -> None:
+async def test_exit_stop_loss_long() -> None:
     backtester = Backtester(
         strategy=BuyAndHoldStrategy(),
         initial_balance=10_000,
@@ -154,7 +139,11 @@ def test_exit_stop_loss_short() -> None:
     assert backtester.should_exit_position(candle)
 
 
-def test_exit_short_position(test_candles: list[CandleModel]) -> None:
+async def test_exit_short_position(
+    test_candles: list[CandleModel],
+    save_candles: Callable[[list[CandleModel]], Awaitable[None]],
+    db_session: AsyncSession,
+) -> None:
     class ShortOnceStrategy(Strategy):
         def __init__(self) -> None:
             super().__init__()
@@ -181,19 +170,25 @@ def test_exit_short_position(test_candles: list[CandleModel]) -> None:
         def should_exit_position(self) -> bool:
             return False
 
+    start_ts = int(test_candles[0].timestamp)
+    end_ts = int(test_candles[-1].timestamp)
+    entry_price = test_candles[0].close
+    exit_price = test_candles[-1].close
     backtester = Backtester(
         strategy=ShortOnceStrategy(),
         initial_balance=10_000,
         symbol="AAPL",
+        start_ts=start_ts,
+        end_ts=end_ts + 1,
     )
-    candles = to_numpy_array(test_candles)
+    await save_candles(test_candles)
 
-    backtester.backtest(candles)
+    await backtester.backtest_stream(db=db_session, warmup_bars=0)
 
     assert len(backtester.trades) == 1
     trade = backtester.trades[0]
     assert trade.type == "short"
-    assert trade.entry_price == candles[0]["close"]
-    assert trade.exit_price == candles[-1]["close"]
+    assert trade.entry_price == entry_price
+    assert trade.exit_price == exit_price
     # PnL for short = entry - exit
     assert backtester.pnl == trade.entry_price - trade.exit_price

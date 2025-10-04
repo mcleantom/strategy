@@ -5,30 +5,8 @@ import numpy as np
 import pytest
 
 from strategy.modes.backtest_mode import Backtester
-from strategy.strategy import Order, Strategy
-
-
-class NoopStrategy(Strategy):
-    """Strategy placeholder — we won't use signals in these tests."""
-
-    def __init__(self) -> None:
-        super().__init__()
-
-    def should_long(self) -> bool:  # not used
-        return False
-
-    def should_short(self) -> bool:  # not used
-        return False
-
-    def go_long(self) -> Order:
-        raise NotImplementedError
-
-    def go_short(self) -> Order:
-        raise NotImplementedError
-
-    def should_exit_position(self) -> bool:
-        return False
-
+from strategy.strategy import Order
+from tests.strategies import NoOpStrategy
 
 # Reusable structured-candle factory (matches your Backtester usage)
 DTYPE = [
@@ -71,7 +49,7 @@ def test_long_pnl(
     exit_: float,
     expected_balance: float,
 ) -> None:
-    strat = NoopStrategy()
+    strat = NoOpStrategy()
     bt = Backtester(strat, initial_balance=1000.0, symbol="AAPL")
 
     enter_c = candle(1, entry, entry)
@@ -103,7 +81,7 @@ def test_short_pnl(
     exit_: float,
     expected_balance: float,
 ) -> None:
-    strat = NoopStrategy()
+    strat = NoOpStrategy()
     bt = Backtester(strat, initial_balance=1000.0, symbol="AAPL")
 
     enter_c = candle(1, entry, entry)

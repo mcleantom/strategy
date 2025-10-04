@@ -43,6 +43,7 @@ class PrefetchStream:
         exc: BaseException | None,
         tb: TracebackType | None,
     ) -> None:
+        del exc_type, exc, tb
         await self.aclose()
 
     async def aclose(self) -> None:

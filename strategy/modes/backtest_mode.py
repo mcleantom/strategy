@@ -3,15 +3,11 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Literal
 
-import arrow
-from tqdm import tqdm
 from tqdm.asyncio import tqdm as tqdm_async
 
 import strategy.utils.helpers as sh
 from strategy.models.enums import ETimeframe
-from strategy.modes.import_candles_mode import generate_candles_from_one_minute_candles
 from strategy.utils.candles_chunk_loader import CandleChunkLoader
-from strategy.utils.helpers import arrow_to_timestamp
 from strategy.utils.prefetch_stream import PrefetchStream
 from strategy.utils.timeframe_aggrigator import TimeframeAggregator
 
@@ -19,6 +15,7 @@ if TYPE_CHECKING:
     from datetime import datetime
 
     import numpy.typing as npt
+    from sqlalchemy.ext.asyncio import AsyncSession
 
     from strategy.strategy import Order, Strategy
 
@@ -53,12 +50,13 @@ class Backtester:
         symbol: str,
         initial_balance: float = 100_000,
         timeframe: ETimeframe = ETimeframe.MINUTE_1,
-        start_ts: int = arrow_to_timestamp(arrow.get("2025-01-01", "YYYY-MM-DD")),
-        end_ts: int = arrow_to_timestamp(arrow.get("2025-01-02", "YYYY-MM-DD")),
+        start_ts: int = 0,
+        end_ts: int = 2**31 - 1,
     ):
         self.strategy = strategy
         self.symbol = symbol
         self.balance: float = initial_balance
+        self.available_margin: float = initial_balance
         self.position: Literal["short", "long"] | None = None
         self.entry_price: float = 0.0
         self.pnl: float = 0.0
@@ -76,8 +74,9 @@ class Backtester:
 
     async def backtest_stream(  # noqa: C901, PLR0912, PLR0915
         self,
-        warmup_bars: int | None = None,
         *,
+        db: AsyncSession,
+        warmup_bars: int = 250,
         show_progress: bool = True,
     ) -> None:
         """Backtest the strategy using a stream of candles."""
@@ -87,11 +86,9 @@ class Backtester:
             end_ts=self.end_ts,
             limit=100_000,
             overlap=0,
+            db=db,
         )
         aggregator = TimeframeAggregator(self.timeframe)
-
-        if warmup_bars is None:
-            warmup_bars = 250
 
         warmed = 0
         processed = 0
@@ -101,7 +98,7 @@ class Backtester:
             num = self.timeframe.to_minutes()
             total_1m = await chunker.count()
             total_agg = total_1m // num
-            warmup = warmup_bars or 250
+            warmup = warmup_bars
             total_tradable = max(0, total_agg - warmup)
             progress = tqdm_async(
                 total=total_tradable,
@@ -145,7 +142,7 @@ class Backtester:
 
                 for candle in tradable:
                     self.strategy.store.candles.add_candle(candle)
-                    self.strategy.available_margin = self.balance
+                    self.strategy.available_margin = self.available_margin
 
                     if self.strategy.should_long() and self.position is None:
                         self.enter_long(self.strategy.go_long(), candle)
@@ -172,52 +169,6 @@ class Backtester:
                 self.exit_position(last)
                 self.calculate_returns(last)
 
-    def backtest(self, candles: npt.NDArray) -> None:
-        """Runs the backtesting loop."""
-        candles = generate_candles_from_one_minute_candles(candles, self.timeframe)
-        self.candles = candles
-
-        self.equity_curve.append(
-            Equity(
-                value=self.balance,
-                date=sh.timestamp_to_arrow(int(candles["timestamp"][0])).datetime,
-            ),
-        )
-        min_warmup_candles = 300
-        self.warmup_candles = 0 if len(candles) < min_warmup_candles else 250
-        for i in range(self.warmup_candles):
-            self.strategy.store.candles.add_candle(candles[i])
-
-        candles = candles[self.warmup_candles :]
-        progress_bar = tqdm(
-            enumerate(candles),
-            total=len(candles),
-            desc="Backtesting Candles",
-        )
-        for _, candle in progress_bar:
-            self.strategy.store.candles.add_candle(candle)
-            self.strategy.available_margin = self.balance
-            if self.strategy.should_long() and self.position is None:
-                self.enter_long(self.strategy.go_long(), candle)
-            elif self.strategy.should_short() and self.position is None:
-                short_order = self.strategy.go_short()
-                self.enter_short(short_order, candle)
-            if self.should_exit_position(candle) and self.position is not None:
-                self.exit_position(candle)
-            if self.balance <= 0:
-                raise RuntimeError("Ran out of money")
-            progress_bar.set_postfix(
-                {"Balance": f"{self.balance:.2f}", "Trades": len(self.trades)},
-            )
-            self.calculate_returns(candle)
-
-        progress_bar.close()
-
-        # Exit any open position at the last candle
-        if self.position is not None and len(candles) > 0:
-            self.exit_position(candles[-1])
-            self.calculate_returns(candles[-1])
-
     def calculate_returns(self, candle: npt.NDArray) -> None:
         equity_now = self._equity_on_bar(candle)
         prev_equity = self.equity_curve[-1].value
@@ -237,6 +188,7 @@ class Backtester:
         self.take_profit = order.take_profit
         self.last_order = order
         self.last_timestamp = int(candle["timestamp"])
+        self.available_margin = self.balance - float(order.quantity) * float(order.price)
 
     def exit_long(self, candle: npt.NDArray) -> None:
         """Exits a long position."""
@@ -263,6 +215,7 @@ class Backtester:
                 exit_timestamp=sh.timestamp_to_arrow(int(candle["timestamp"])).datetime,
             ),
         )
+        self.available_margin = self.balance
 
     def enter_short(self, order: Order, candle: npt.NDArray) -> None:
         """Enters a short position."""
@@ -272,6 +225,7 @@ class Backtester:
         self.take_profit = order.take_profit
         self.last_order = order
         self.last_timestamp = int(candle["timestamp"])
+        self.available_margin = self.balance - float(order.quantity) * float(order.price)
 
     def exit_short(self, candle: npt.NDArray) -> None:
         """Exits a short position."""
@@ -298,6 +252,7 @@ class Backtester:
                 exit_timestamp=sh.timestamp_to_arrow(int(candle["timestamp"])).datetime,
             ),
         )
+        self.available_margin = self.balance
 
     def should_exit_position(self, candle: npt.NDArray) -> bool:
         """Exits a position if hit a stop loss/take profit or the strategy says to exit."""

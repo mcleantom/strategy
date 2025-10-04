@@ -1,41 +1,14 @@
 from __future__ import annotations
 
-import numpy as np
+from collections.abc import Awaitable, Callable
 
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from strategy.db import CandleModel
 from strategy.models.position import Position, PositionType
 from strategy.modes.backtest_mode import Backtester
 from strategy.strategy import Order, Strategy
-
-
-def _mk_candle(ts: int, price: float) -> np.ndarray:
-    dtype = [
-        ("timestamp", "i8"),
-        ("open", "f8"),
-        ("close", "f8"),
-        ("high", "f8"),
-        ("low", "f8"),
-        ("volume", "f8"),
-    ]
-    return np.array([(ts, price, price, price, price, 0.0)], dtype=dtype)[0]
-
-
-class NoOpStrategy(Strategy):
-    """Does nothing."""
-
-    def should_long(self) -> bool:
-        return False
-
-    def go_long(self) -> Order:
-        raise NotImplementedError
-
-    def should_short(self) -> bool:
-        return False
-
-    def go_short(self) -> Order:
-        raise NotImplementedError
-
-    def should_exit_position(self) -> bool:
-        return False
+from tests.strategies import NoOpStrategy
 
 
 def test_is_long_is_short_flags() -> None:
@@ -59,7 +32,10 @@ def test_is_long_is_short_flags() -> None:
     assert s.is_short
 
 
-def test_available_margin_updates_during_backtest() -> None:
+async def test_available_margin_updates_during_backtest(
+    save_candles: Callable[[list[CandleModel]], Awaitable[None]],
+    db_session: AsyncSession,
+) -> None:
     class MarginStrategy(Strategy):
         def __init__(self) -> None:
             super().__init__()
@@ -67,11 +43,15 @@ def test_available_margin_updates_during_backtest() -> None:
             self._went_long = False
 
         def should_long(self) -> bool:
+            self.seen_margins.append(self.available_margin)
             return not self._went_long
 
         def go_long(self) -> Order:
             self._went_long = True
-            return Order(quantity=1.0, price=float(self.candles[-1]["close"]))
+            return Order(
+                quantity=1.0,
+                price=float(self.candles[-1]["close"]),
+            )
 
         def should_short(self) -> bool:
             return False
@@ -83,8 +63,35 @@ def test_available_margin_updates_during_backtest() -> None:
             return False
 
     strat = MarginStrategy()
-    bt = Backtester(strategy=strat, initial_balance=500.0, symbol="AAPL")
-    candles = np.array([_mk_candle(0, 10.0), _mk_candle(60_000, 10.0)])
-    bt.backtest(candles)
-    # _available_margin should reflect last loop balance at least once
-    assert strat.available_margin == 500.0
+    bt = Backtester(
+        strategy=strat,
+        initial_balance=500.0,
+        symbol="AAPL",
+    )
+    candles = [
+        CandleModel(
+            timestamp=0,
+            open=100.0,
+            high=100.0,
+            low=100.0,
+            close=100.0,
+            volume=0.0,
+            exchange="NYSE",
+            symbol="AAPL",
+            timeframe="1m",
+        ),
+        CandleModel(
+            timestamp=1,
+            open=100.0,
+            high=100.0,
+            low=100.0,
+            close=100.0,
+            volume=0.0,
+            exchange="NYSE",
+            symbol="AAPL",
+            timeframe="1m",
+        ),
+    ]
+    await save_candles(candles)
+    await bt.backtest_stream(db=db_session, warmup_bars=0)
+    assert strat.seen_margins == [500.0, 400.0]

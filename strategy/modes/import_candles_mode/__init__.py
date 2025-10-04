@@ -237,10 +237,6 @@ def store_candles_list(candles: list[dict[str, float | str]]) -> None:
         f"to {timestamp_to_time(int(candles[-1]['timestamp']))}",
     )
 
-    for c in candles:
-        if "timeframe" not in c:
-            raise ValueError("Candle has no timeframe")
-
     stmt = insert(CandleModel).values(candles)
     stmt = stmt.on_conflict_do_nothing(
         index_elements=["exchange", "symbol", "timeframe", "timestamp"],

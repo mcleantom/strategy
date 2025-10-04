@@ -4,7 +4,7 @@ import numpy as np
 
 from strategy.modes.livetrade_mode import LiveTrader
 from tests.mocks import DummyExchange
-from tests.strategies import DummyStrategy
+from tests.strategies import BuyAndHoldStrategy
 
 
 def _mk_candle(price: float) -> np.ndarray:
@@ -20,14 +20,13 @@ def _mk_candle(price: float) -> np.ndarray:
 
 
 async def test_enter_and_exit_long_flow() -> None:
-    strategy = DummyStrategy()
+    strategy = BuyAndHoldStrategy()
     exchange = DummyExchange(balance=1_000)
     trader = LiveTrader(strategy=strategy, exchange=exchange, symbol="AAPL")
 
     # set candles and make strategy enter long
     c1 = _mk_candle(100.0)
     strategy.store.candles.add_candle(c1)
-    strategy._should_long = True
     await trader.on_candle()
 
     assert trader.position is not None
@@ -45,7 +44,7 @@ async def test_enter_and_exit_long_flow() -> None:
 
 
 async def test_should_exit_conditions() -> None:
-    strategy = DummyStrategy()
+    strategy = BuyAndHoldStrategy()
     exchange = DummyExchange(balance=1_000)
     trader = LiveTrader(strategy=strategy, exchange=exchange, symbol="AAPL")
 
@@ -55,7 +54,6 @@ async def test_should_exit_conditions() -> None:
     # Enter position and set stops
     c1 = _mk_candle(100.0)
     strategy.store.candles.add_candle(c1)
-    strategy._should_long = True
     await trader.on_candle()
 
     # set stop loss and take profit

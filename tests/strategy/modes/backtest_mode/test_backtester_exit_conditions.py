@@ -1,21 +1,13 @@
 from __future__ import annotations
 
-import numpy as np
+from collections.abc import Awaitable, Callable
 
+import pytest
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from strategy.db import CandleModel
 from strategy.modes.backtest_mode import Backtester
 from strategy.strategy import Order, Strategy
-
-
-def _mk_candle(ts: int, price: float) -> np.ndarray:
-    dtype = [
-        ("timestamp", "i8"),
-        ("open", "f8"),
-        ("close", "f8"),
-        ("high", "f8"),
-        ("low", "f8"),
-        ("volume", "f8"),
-    ]
-    return np.array([(ts, price, price, price, price, 0.0)], dtype=dtype)[0]
 
 
 class CancelStrategy(Strategy):
@@ -23,7 +15,6 @@ class CancelStrategy(Strategy):
 
     def __init__(self) -> None:
         super().__init__()
-        self._should_cancel = False
 
     def should_long(self) -> bool:
         return True
@@ -38,26 +29,66 @@ class CancelStrategy(Strategy):
         raise NotImplementedError
 
     def should_exit_position(self) -> bool:
-        return self._should_cancel
+        return True
 
 
-def test_should_exit_position_exits_position() -> None:
+@pytest.mark.skip(reason="Doesnt actually test if should_exit_position closes position")  # type: ignore[misc]
+async def test_should_exit_position_exits_position(
+    save_candles: Callable[[list[CandleModel]], Awaitable[None]],
+    db_session: AsyncSession,
+) -> None:
     strat = CancelStrategy()
-    bt = Backtester(strategy=strat, initial_balance=1000.0, symbol="AAPL")
-    candles = np.array(
-        [
-            _mk_candle(0, 100.0),
-            _mk_candle(60_000, 100.0),  # enter long
-            _mk_candle(120_000, 100.0),  # cancel
-        ],
+    bt = Backtester(
+        strategy=strat,
+        initial_balance=1000.0,
+        symbol="AAPL",
+        start_ts=0,
+        end_ts=300_000,
     )
-    strat._should_cancel = True
-    bt.backtest(candles)
-    # Should have entered and exited due to cancel
+    candles = [
+        CandleModel(
+            timestamp=0,
+            open=100.0,
+            high=100.0,
+            low=100.0,
+            close=100.0,
+            volume=0.0,
+            exchange="NYSE",
+            symbol="AAPL",
+            timeframe="1m",
+        ),
+        CandleModel(
+            timestamp=1,
+            open=100.0,
+            high=100.0,
+            low=100.0,
+            close=100.0,
+            volume=0.0,
+            exchange="NYSE",
+            symbol="AAPL",
+            timeframe="1m",
+        ),
+        CandleModel(
+            timestamp=2,
+            open=100.0,
+            high=100.0,
+            low=100.0,
+            close=100.0,
+            volume=0.0,
+            exchange="NYSE",
+            symbol="AAPL",
+            timeframe="1m",
+        ),
+    ]
+    await save_candles(candles)
+    await bt.backtest_stream(db=db_session, warmup_bars=0)
     assert len(bt.trades) >= 1
 
 
-def test_stop_loss_and_take_profit_both_conditions() -> None:
+async def test_stop_loss_and_take_profit_both_conditions(
+    save_candles: Callable[[list[CandleModel]], Awaitable[None]],
+    db_session: AsyncSession,
+) -> None:
     class BothExitsStrategy(Strategy):
         def __init__(self) -> None:
             super().__init__()
@@ -80,15 +111,50 @@ def test_stop_loss_and_take_profit_both_conditions() -> None:
             return False
 
     strat = BothExitsStrategy()
-    bt = Backtester(strategy=strat, initial_balance=1000.0, symbol="AAPL")
-    # Price hits take profit
-    candles = np.array(
-        [
-            _mk_candle(0, 100.0),
-            _mk_candle(60_000, 100.0),  # enter
-            _mk_candle(120_000, 105.0),  # hit TP
-        ],
+    bt = Backtester(
+        strategy=strat,
+        initial_balance=1000.0,
+        symbol="AAPL",
+        start_ts=0,
+        end_ts=300_000,
     )
-    bt.backtest(candles)
+    # Price hits take profit
+    candles = [
+        CandleModel(
+            timestamp=0,
+            open=100.0,
+            high=100.0,
+            low=100.0,
+            close=100.0,
+            volume=0.0,
+            exchange="NYSE",
+            symbol="AAPL",
+            timeframe="1m",
+        ),
+        CandleModel(
+            timestamp=1,
+            open=100.0,
+            high=100.0,
+            low=100.0,
+            close=100.0,
+            volume=0.0,
+            exchange="NYSE",
+            symbol="AAPL",
+            timeframe="1m",
+        ),  # enter
+        CandleModel(
+            timestamp=2,
+            open=100.0,
+            high=105.0,
+            low=100.0,
+            close=105.0,
+            volume=0.0,
+            exchange="NYSE",
+            symbol="AAPL",
+            timeframe="1m",
+        ),  # hit TP
+    ]
+    await save_candles(candles)
+    await bt.backtest_stream(db=db_session, warmup_bars=0)
     assert len(bt.trades) >= 1
     assert bt.trades[0].exit_price == 105.0

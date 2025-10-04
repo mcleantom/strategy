@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from collections.abc import AsyncGenerator
+import os
+from collections.abc import AsyncGenerator, Generator
 
 import aiohttp
 import pytest
@@ -76,7 +77,24 @@ async def test_400_response(exchange: AlpacaExchange) -> None:
     assert err.value.message == 'Unauthorized; body={"message": "unauthorized."}'
 
 
-def test_no_api_key() -> None:
+@pytest.fixture  # type: ignore[misc]
+def remove_alpaca_api_env_vars() -> Generator[None]:
+    """Remove ALPACA_KEY and ALPACA_SECRET from environment for the duration of a test."""
+    old_key = os.environ.pop("ALPACA_KEY", None)
+    old_secret = os.environ.pop("ALPACA_SECRET", None)
+    try:
+        yield
+    finally:
+        if old_key is not None:
+            os.environ["ALPACA_KEY"] = old_key
+        if old_secret is not None:
+            os.environ["ALPACA_SECRET"] = old_secret
+
+
+def test_no_api_key(
+    remove_alpaca_api_env_vars: None,
+) -> None:
+    del remove_alpaca_api_env_vars
     with pytest.raises(RuntimeError) as exc:
         AlpacaExchange()
     assert str(exc.value) == "ALPACA_KEY and ALPACA_SECRET must be set or passed in."

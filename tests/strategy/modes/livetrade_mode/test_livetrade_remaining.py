@@ -6,7 +6,7 @@ import numpy as np
 
 from strategy.modes.livetrade_mode import LiveTrade, LiveTrader
 from tests.mocks import DummyExchange
-from tests.strategies import DummyStrategy
+from tests.strategies import BuyAndHoldStrategy
 
 
 def _mk_candle(price: float) -> np.ndarray:
@@ -22,13 +22,13 @@ def _mk_candle(price: float) -> np.ndarray:
 
 
 async def test_insufficient_balance_does_not_enter() -> None:
-    strategy = DummyStrategy()
+    strategy = BuyAndHoldStrategy()
     exchange = DummyExchange(balance=50.0)  # Low balance
     trader = LiveTrader(strategy=strategy, exchange=exchange, symbol="AAPL")
 
     c1 = _mk_candle(100.0)
     strategy.store.candles.add_candle(c1)
-    strategy._should_long = True
+    strategy._has_gone_long = True
     await trader.on_candle()
 
     # Should not enter due to insufficient balance
@@ -37,7 +37,7 @@ async def test_insufficient_balance_does_not_enter() -> None:
 
 
 async def test_exit_position_with_no_order_id() -> None:
-    strategy = DummyStrategy()
+    strategy = BuyAndHoldStrategy()
     exchange = DummyExchange(balance=1_000)
     trader = LiveTrader(strategy=strategy, exchange=exchange, symbol="AAPL")
 

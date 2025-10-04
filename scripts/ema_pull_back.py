@@ -6,6 +6,7 @@ from dataclasses import dataclass
 import arrow
 from loguru import logger
 
+from strategy.db.base import AsyncSessionLocal
 from strategy.indicators import atr, ema
 from strategy.models.enums import ETimeframe
 from strategy.modes.backtest_mode import Backtester
@@ -193,7 +194,8 @@ async def main() -> None:
         start_ts=arrow_to_timestamp(arrow.get("1990-01-01", "YYYY-MM-DD")),
         end_ts=arrow_to_timestamp(arrow.get("2025-01-02", "YYYY-MM-DD")),
     )
-    await backtester.backtest_stream()
+    async with AsyncSessionLocal() as db:
+        await backtester.backtest_stream(db=db)
     logger.info(backtester.balance)
 
 

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import uuid
+
 from sqlalchemy import UUID, BigInteger, Column, Float, String, UniqueConstraint
 
 from strategy.db.base import Base
@@ -8,7 +10,7 @@ from strategy.db.base import Base
 class CandleModel(Base):
     __tablename__ = "candles"
 
-    id = Column(UUID, primary_key=True)
+    id = Column(UUID, primary_key=True, default=uuid.uuid4)
     timestamp = Column(BigInteger, index=True)
     open = Column(Float)
     close = Column(Float)

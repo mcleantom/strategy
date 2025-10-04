@@ -254,6 +254,7 @@ warn_untyped_fields = true
 [dependency-groups]
 dev = [
     "aioresponses>=0.7.8",
+    "pre-commit>=4.3.0",
     "pydantic[mypy]>=2.11.9",
     "pytest>=8.4.2",
     "pytest-asyncio>=1.2.0",
