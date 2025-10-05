@@ -39,7 +39,7 @@ class Strategy(ABC):
         self.sell = None
         self.stop_loss = None
         self.take_profit = None
-        self.position: Position | None = None
+        self.position: PositionType | None = None
         self.available_margin: float = 0.0
 
     @abstractmethod
@@ -70,10 +70,8 @@ class Strategy(ABC):
     def is_long(self) -> bool:
         if self.position is None:
             return False
-        return self.position.type == PositionType.long
+        return self.position == PositionType.long
 
     @property
     def is_short(self) -> bool:
-        if self.position is None:
-            return False
-        return self.position.type == PositionType.short
+        return self.position == PositionType.short

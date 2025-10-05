@@ -10,6 +10,8 @@ from strategy.models.enums import ETimeframe
 from strategy.utils.candles_chunk_loader import CandleChunkLoader
 from strategy.utils.prefetch_stream import PrefetchStream
 from strategy.utils.timeframe_aggrigator import TimeframeAggregator
+from loguru import logger
+from strategy.models.position import PositionType
 
 if TYPE_CHECKING:
     from datetime import datetime
@@ -97,6 +99,8 @@ class Backtester:
         if show_progress:
             num = self.timeframe.to_minutes()
             total_1m = await chunker.count()
+            if total_1m == 0:
+                raise RuntimeError("No candles found for backtest")
             total_agg = total_1m // num
             warmup = warmup_bars
             total_tradable = max(0, total_agg - warmup)
@@ -144,12 +148,11 @@ class Backtester:
                     self.strategy.store.candles.add_candle(candle)
                     self.strategy.available_margin = self.available_margin
 
-                    if self.strategy.should_long() and self.position is None:
+                    if self.position is None and self.strategy.should_long():
                         self.enter_long(self.strategy.go_long(), candle)
-                    elif self.strategy.should_short() and self.position is None:
+                    elif self.position is None and self.strategy.should_short():
                         self.enter_short(self.strategy.go_short(), candle)
-
-                    if self.should_exit_position(candle) and self.position is not None:
+                    if self.position is not None and self.should_exit_position(candle):
                         self.exit_position(candle)
 
                     if self.balance <= 0:
@@ -159,6 +162,13 @@ class Backtester:
 
                 processed += len(tradable)
                 if progress is not None:
+                    progress.set_postfix(
+                        balance=f"{self.balance:,.2f}",
+                        margin=f"{self.available_margin:,.2f}",
+                        pnl=f"{self.pnl:,.2f}",
+                        position=self.position if self.position else "none",
+                        trades=len(self.trades),
+                    )
                     progress.update(len(tradable))
 
             if progress is not None:
@@ -189,6 +199,7 @@ class Backtester:
         self.last_order = order
         self.last_timestamp = int(candle["timestamp"])
         self.available_margin = self.balance - float(order.quantity) * float(order.price)
+        self.strategy.position = PositionType.long
 
     def exit_long(self, candle: npt.NDArray) -> None:
         """Exits a long position."""
@@ -226,6 +237,7 @@ class Backtester:
         self.last_order = order
         self.last_timestamp = int(candle["timestamp"])
         self.available_margin = self.balance - float(order.quantity) * float(order.price)
+        self.strategy.position = PositionType.short
 
     def exit_short(self, candle: npt.NDArray) -> None:
         """Exits a short position."""
@@ -283,6 +295,7 @@ class Backtester:
         else:
             self.exit_short(candle)
         self.position = None
+        self.strategy.position = None
 
     def _fill_exit_price(self, candle: npt.NDArray) -> float:
         high, low, close = (
@@ -312,3 +325,62 @@ class Backtester:
             else:
                 u_pnl = (self.entry_price - close) * qty
         return self.balance + u_pnl
+
+    def plot_results(self) -> None:
+        import matplotlib.pyplot as plt
+        import matplotlib.dates as mdates
+        close_prices = [float(c["close"]) for c in self.strategy.store.candles.candles]
+        timestamps = [
+            sh.timestamp_to_arrow(int(c["timestamp"])).datetime
+            for c in self.strategy.store.candles.candles
+        ]
+        equity_dates = [e.date for e in self.equity_curve]
+        equity_values = [e.value for e in self.equity_curve]
+
+        # --- Plot ---
+        fig, ax1 = plt.subplots(figsize=(14, 7))
+        ax2 = ax1.twinx()
+
+        # Price
+        ax1.plot(timestamps, close_prices, color="gray", label="Close Price", linewidth=1.2)
+        ax1.set_xlabel("Date")
+        ax1.set_ylabel("Price", color="gray")
+        ax1.tick_params(axis="y", labelcolor="gray")
+
+        # Equity curve
+        ax2.plot(equity_dates, equity_values, color="blue", label="Equity Curve", linewidth=1.4)
+        ax2.set_ylabel("Equity", color="blue")
+        ax2.tick_params(axis="y", labelcolor="blue")
+
+        # Trade markers
+        for trade in self.trades:
+            ax1.scatter(
+                trade.entry_timestamp,
+                trade.entry_price,
+                marker="^",
+                color="green",
+                s=70,
+                label="Entry" if trade == self.trades[0] else "",
+                zorder=5,
+            )
+            ax1.scatter(
+                trade.exit_timestamp,
+                trade.exit_price,
+                marker="v",
+                color="red",
+                s=70,
+                label="Exit" if trade == self.trades[0] else "",
+                zorder=5,
+            )
+
+        # Format x-axis
+        ax1.xaxis.set_major_formatter(mdates.DateFormatter("%Y-%m"))
+        fig.autofmt_xdate()
+
+        # Legend
+        ax1.legend(loc="upper left")
+        ax2.legend(loc="upper right")
+
+        plt.title(f"Backtest Results: {self.symbol}")
+        plt.tight_layout()
+        plt.show()
